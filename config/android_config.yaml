@@ -1,0 +1,20 @@
+# Android Application Configuration
+
+camera:
+  target_resolution: "1920x1080"
+  target_fps: 30
+  format: "YUV_420_888"
+
+imu:
+  accelerometer_rate: 200  # Hz
+  gyroscope_rate: 200      # Hz
+
+streaming:
+  protocol: "webrtc"
+  port: 8080
+  buffer_size: 1024
+
+slam:
+  type: "vins_mono"  # or "orbslam3", "basalt"
+  enable_loop_closure: true
+  enable_visualization: true

@@ -1,0 +1,58 @@
+# Development container for VI-SLAM PC Client
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    pkg-config \
+    wget \
+    curl \
+    vim \
+    # OpenCV dependencies
+    libopencv-dev \
+    # Eigen
+    libeigen3-dev \
+    # ZeroMQ
+    libzmq3-dev \
+    # Python
+    python3 \
+    python3-pip \
+    python3-venv \
+    # Optional: Ceres Solver dependencies
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libatlas-base-dev \
+    libsuitesparse-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Ceres Solver (optional but recommended)
+RUN cd /tmp && \
+    git clone https://github.com/ceres-solver/ceres-solver.git && \
+    cd ceres-solver && \
+    git checkout 2.1.0 && \
+    mkdir build && cd build && \
+    cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF && \
+    make -j$(nproc) && \
+    make install && \
+    cd / && rm -rf /tmp/ceres-solver
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy project files
+COPY . /workspace/
+
+# Set up Python virtual environment
+RUN cd /workspace/pc_client/python && \
+    python3 -m venv venv && \
+    . venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+# Default command
+CMD ["/bin/bash"]

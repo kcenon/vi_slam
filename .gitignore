@@ -14,12 +14,38 @@ dist/
 *.o
 *.so
 *.dylib
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
 
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 venv/
+env/
+.Python
 
 # Logs
 *.log
+
+# Android specific
+android/.gradle/
+android/build/
+android/local.properties
+android/.idea/
+android/*.iml
+android/app/build/
+android/.externalNativeBuild/
+android/.cxx/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Output
+output/
+*.tum
+*.kitti
