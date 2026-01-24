@@ -1,0 +1,25 @@
+# PC Client Configuration
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  max_connections: 5
+
+slam:
+  type: "vins_mono"
+  config_file: "config/vins_mono.yaml"
+  vocab_file: "vocab/ORBvoc.txt"
+
+processing:
+  num_threads: 4
+  enable_gpu: false
+
+output:
+  save_trajectory: true
+  trajectory_format: "tum"  # or "kitti", "euroc"
+  output_dir: "output/"
+
+visualization:
+  enable: true
+  window_width: 1280
+  window_height: 720

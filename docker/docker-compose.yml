@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  vi-slam-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: vi-slam-dev
+    volumes:
+      - ..:/workspace
+      - cmake-cache:/workspace/build
+      - cmake-cache-pc:/workspace/pc_client/build
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+    command: /bin/bash
+
+volumes:
+  cmake-cache:
+  cmake-cache-pc:
