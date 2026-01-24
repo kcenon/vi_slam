@@ -28,6 +28,7 @@ include_directories(
 
 # Source files
 set(COMMON_SOURCES
+    src/slam/slam_engine.cpp
     src/slam/adapters/vins_mono_adapter.cpp
 )
 

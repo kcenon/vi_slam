@@ -11,3 +11,15 @@ target_link_libraries(test_vins_mono_adapter
 )
 
 add_test(NAME test_vins_mono_adapter COMMAND test_vins_mono_adapter)
+
+# SLAMEngine test
+add_executable(test_slam_engine
+    test_slam_engine.cpp
+)
+
+target_link_libraries(test_slam_engine
+    ${PROJECT_NAME}
+    ${OpenCV_LIBS}
+)
+
+add_test(NAME test_slam_engine COMMAND test_slam_engine)
