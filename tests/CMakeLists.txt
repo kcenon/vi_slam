@@ -23,3 +23,6 @@ target_link_libraries(test_slam_engine
 )
 
 add_test(NAME test_slam_engine COMMAND test_slam_engine)
+
+# E2E tests
+add_subdirectory(e2e)
