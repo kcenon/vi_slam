@@ -244,6 +244,13 @@ void SLAMEngine::invokePoseCallback(const Pose6DoF& pose) {
         rosPublisher_->publishPose(pose);
     }
 #endif
+
+#ifdef ENABLE_ZMQ
+    // Publish to ZMQ if enabled
+    if (zmqPublisher_) {
+        zmqPublisher_->publishPose(pose);
+    }
+#endif
 }
 
 void SLAMEngine::invokeStatusCallback(TrackingStatus status) {
@@ -283,6 +290,42 @@ void SLAMEngine::disableROSPublisher() {
 bool SLAMEngine::isROSPublisherEnabled() const {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     return rosPublisher_ != nullptr;
+}
+#endif
+
+#ifdef ENABLE_ZMQ
+void SLAMEngine::enableZMQPublisher(const output::ZMQPublisherConfig& config) {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+
+    if (zmqPublisher_) {
+        std::cerr << "ZMQ publisher already enabled" << std::endl;
+        return;
+    }
+
+    zmqPublisher_ = std::make_unique<output::ZMQPublisher>(config);
+    std::cout << "ZMQ publisher enabled on " << config.endpoint << std::endl;
+}
+
+void SLAMEngine::disableZMQPublisher() {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+
+    if (!zmqPublisher_) {
+        std::cerr << "ZMQ publisher not enabled" << std::endl;
+        return;
+    }
+
+    zmqPublisher_.reset();
+    std::cout << "ZMQ publisher disabled" << std::endl;
+}
+
+bool SLAMEngine::isZMQPublisherEnabled() const {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    return zmqPublisher_ != nullptr;
+}
+
+output::ZMQPublisher* SLAMEngine::getZMQPublisher() const {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    return zmqPublisher_.get();
 }
 #endif
 

@@ -30,6 +30,14 @@ if(ENABLE_ROS)
     add_definitions(-DENABLE_ROS)
 endif()
 
+# Optional ZMQ support
+option(ENABLE_ZMQ "Enable ZMQ integration" OFF)
+if(ENABLE_ZMQ)
+    find_package(cppzmq REQUIRED)
+    find_package(nlohmann_json 3.2.0 REQUIRED)
+    add_definitions(-DENABLE_ZMQ)
+endif()
+
 # Include directories
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
@@ -47,6 +55,12 @@ if(ENABLE_ROS)
     )
 endif()
 
+if(ENABLE_ZMQ)
+    include_directories(
+        ${cppzmq_INCLUDE_DIR}
+    )
+endif()
+
 # Source files
 set(COMMON_SOURCES
     src/slam/slam_engine.cpp
@@ -59,6 +73,12 @@ set(COMMON_SOURCES
 if(ENABLE_ROS)
     list(APPEND COMMON_SOURCES
         src/slam/output/ros_publisher.cpp
+    )
+endif()
+
+if(ENABLE_ZMQ)
+    list(APPEND COMMON_SOURCES
+        src/slam/output/zmq_publisher.cpp
     )
 endif()
 
@@ -79,6 +99,13 @@ if(ENABLE_ROS)
         ${nav_msgs_LIBRARIES}
         ${tf2_LIBRARIES}
         ${tf2_ros_LIBRARIES}
+    )
+endif()
+
+if(ENABLE_ZMQ)
+    target_link_libraries(${PROJECT_NAME}
+        cppzmq
+        nlohmann_json::nlohmann_json
     )
 endif()
 
@@ -110,4 +137,5 @@ message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "  Eigen3 version: ${Eigen3_VERSION}")
 message(STATUS "  ROS support: ${ENABLE_ROS}")
+message(STATUS "  ZMQ support: ${ENABLE_ZMQ}")
 message(STATUS "")
