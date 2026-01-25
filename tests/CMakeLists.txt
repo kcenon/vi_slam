@@ -59,6 +59,17 @@ target_link_libraries(test_trajectory_exporter
 
 add_test(NAME test_trajectory_exporter COMMAND test_trajectory_exporter)
 
+# PointCloudExporter test
+add_executable(test_pointcloud_exporter
+    slam/output/test_pointcloud_exporter.cpp
+)
+
+target_link_libraries(test_pointcloud_exporter
+    ${PROJECT_NAME}
+)
+
+add_test(NAME test_pointcloud_exporter COMMAND test_pointcloud_exporter)
+
 # ROSPublisher test (conditional on ROS support)
 if(ENABLE_ROS)
     find_package(GTest REQUIRED)
