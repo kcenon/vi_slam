@@ -19,12 +19,33 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 find_package(OpenCV 4.5 REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
+# Optional ROS support
+option(ENABLE_ROS "Enable ROS integration" OFF)
+if(ENABLE_ROS)
+    find_package(roscpp REQUIRED)
+    find_package(geometry_msgs REQUIRED)
+    find_package(nav_msgs REQUIRED)
+    find_package(tf2 REQUIRED)
+    find_package(tf2_ros REQUIRED)
+    add_definitions(-DENABLE_ROS)
+endif()
+
 # Include directories
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
 )
+
+if(ENABLE_ROS)
+    include_directories(
+        ${roscpp_INCLUDE_DIRS}
+        ${geometry_msgs_INCLUDE_DIRS}
+        ${nav_msgs_INCLUDE_DIRS}
+        ${tf2_INCLUDE_DIRS}
+        ${tf2_ros_INCLUDE_DIRS}
+    )
+endif()
 
 # Source files
 set(COMMON_SOURCES
@@ -35,6 +56,12 @@ set(COMMON_SOURCES
     src/slam/output/trajectory_exporter.cpp
 )
 
+if(ENABLE_ROS)
+    list(APPEND COMMON_SOURCES
+        src/slam/output/ros_publisher.cpp
+    )
+endif()
+
 # Library
 add_library(${PROJECT_NAME} SHARED
     ${COMMON_SOURCES}
@@ -44,6 +71,16 @@ target_link_libraries(${PROJECT_NAME}
     ${OpenCV_LIBS}
     Eigen3::Eigen
 )
+
+if(ENABLE_ROS)
+    target_link_libraries(${PROJECT_NAME}
+        ${roscpp_LIBRARIES}
+        ${geometry_msgs_LIBRARIES}
+        ${nav_msgs_LIBRARIES}
+        ${tf2_LIBRARIES}
+        ${tf2_ros_LIBRARIES}
+    )
+endif()
 
 # Installation
 install(TARGETS ${PROJECT_NAME}
@@ -72,4 +109,5 @@ message(STATUS "  C++ standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "  OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "  Eigen3 version: ${Eigen3_VERSION}")
+message(STATUS "  ROS support: ${ENABLE_ROS}")
 message(STATUS "")

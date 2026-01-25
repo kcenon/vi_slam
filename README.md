@@ -51,6 +51,7 @@ vi_slam/
   - Eigen3
   - ZeroMQ (optional)
   - Ceres Solver (optional)
+  - ROS (optional, for ROS integration)
 
 #### Installing Dependencies
 
@@ -98,7 +99,6 @@ android/app/build/outputs/apk/debug/app-debug.apk
 ### PC Client
 
 ```bash
-cd pc_client
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
@@ -108,6 +108,23 @@ Or use the build script:
 ```bash
 ./scripts/build_pc_client.sh Release
 ```
+
+#### Building with ROS Support
+
+To enable ROS topic publishing:
+
+```bash
+mkdir build && cd build
+cmake .. -DENABLE_ROS=ON
+make -j$(nproc)
+```
+
+**Prerequisites for ROS:**
+- ROS Noetic (Ubuntu 20.04) or ROS Melodic (Ubuntu 18.04)
+- Source ROS environment before building:
+  ```bash
+  source /opt/ros/noetic/setup.bash  # or melodic
+  ```
 
 ### Python Environment Setup
 
@@ -209,6 +226,75 @@ GitHub Actions automatically:
 - Uploads build artifacts
 
 See [.github/workflows/ci.yml](.github/workflows/ci.yml) for details.
+
+## ROS Integration
+
+When built with `-DENABLE_ROS=ON`, VI-SLAM publishes SLAM output to ROS topics for real-time visualization and integration with the ROS ecosystem.
+
+### Published Topics
+
+| Topic | Type | Description |
+|-------|------|-------------|
+| `/slam/pose` | `geometry_msgs/PoseStamped` | Current camera pose |
+| `/slam/odom` | `nav_msgs/Odometry` | Odometry with velocity estimation |
+| `/slam/path` | `nav_msgs/Path` | Full trajectory history |
+
+### Frame Convention
+
+- **map**: Fixed world frame
+- **base_link**: Moving camera/robot frame
+
+### Usage Example
+
+```cpp
+#include "slam/slam_engine.hpp"
+
+#ifdef ENABLE_ROS
+#include <ros/ros.h>
+
+int main(int argc, char** argv) {
+    // Initialize ROS
+    ros::init(argc, argv, "vi_slam_node");
+    ros::NodeHandle nh;
+
+    // Create SLAM engine
+    vi_slam::SLAMEngine engine;
+    engine.initialize("config/slam_config.yaml");
+
+    // Enable ROS publisher with custom configuration
+    vi_slam::output::ROSPublisherConfig rosConfig;
+    rosConfig.poseTopicName = "/slam/pose";
+    rosConfig.frameId = "map";
+    rosConfig.maxPathLength = 1000;
+
+    engine.enableROSPublisher(nh, rosConfig);
+
+    // Process images and IMU data...
+    // Poses will be automatically published to ROS topics
+
+    ros::spin();
+    return 0;
+}
+#endif
+```
+
+### Visualization in RViz
+
+```bash
+# Terminal 1: Start ROS core
+roscore
+
+# Terminal 2: Run VI-SLAM with ROS enabled
+./build/vi_slam_node
+
+# Terminal 3: Launch RViz
+rosrun rviz rviz
+```
+
+In RViz, add displays:
+- **Path**: Subscribe to `/slam/path` with frame `map`
+- **Odometry**: Subscribe to `/slam/odom`
+- **Pose**: Subscribe to `/slam/pose`
 
 ## Supported SLAM Frameworks
 

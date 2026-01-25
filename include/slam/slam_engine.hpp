@@ -7,6 +7,11 @@
 #include <mutex>
 #include <string>
 
+#ifdef ENABLE_ROS
+#include "slam/output/ros_publisher.hpp"
+#include <ros/ros.h>
+#endif
+
 namespace vi_slam {
 
 // Forward declarations
@@ -56,6 +61,14 @@ public:
     void setPoseCallback(PoseCallback callback);
     void setStatusCallback(StatusCallback callback);
 
+#ifdef ENABLE_ROS
+    // ROS integration
+    void enableROSPublisher(ros::NodeHandle& nodeHandle,
+                          const output::ROSPublisherConfig& config = output::ROSPublisherConfig());
+    void disableROSPublisher();
+    bool isROSPublisherEnabled() const;
+#endif
+
 private:
     // Framework factory method
     std::unique_ptr<ISLAMFramework> createFramework(SLAMFrameworkType type);
@@ -78,6 +91,11 @@ private:
 
     // State flags
     bool initialized_;
+
+#ifdef ENABLE_ROS
+    // ROS publisher
+    std::unique_ptr<output::ROSPublisher> rosPublisher_;
+#endif
 };
 
 }  // namespace vi_slam

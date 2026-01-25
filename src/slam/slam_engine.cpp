@@ -237,6 +237,13 @@ void SLAMEngine::invokePoseCallback(const Pose6DoF& pose) {
     if (poseCallback_) {
         poseCallback_(pose);
     }
+
+#ifdef ENABLE_ROS
+    // Publish to ROS if enabled
+    if (rosPublisher_) {
+        rosPublisher_->publishPose(pose);
+    }
+#endif
 }
 
 void SLAMEngine::invokeStatusCallback(TrackingStatus status) {
@@ -246,5 +253,37 @@ void SLAMEngine::invokeStatusCallback(TrackingStatus status) {
         statusCallback_(status);
     }
 }
+
+#ifdef ENABLE_ROS
+void SLAMEngine::enableROSPublisher(ros::NodeHandle& nodeHandle,
+                                   const output::ROSPublisherConfig& config) {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+
+    if (rosPublisher_) {
+        std::cerr << "ROS publisher already enabled" << std::endl;
+        return;
+    }
+
+    rosPublisher_ = std::make_unique<output::ROSPublisher>(nodeHandle, config);
+    std::cout << "ROS publisher enabled" << std::endl;
+}
+
+void SLAMEngine::disableROSPublisher() {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+
+    if (!rosPublisher_) {
+        std::cerr << "ROS publisher not enabled" << std::endl;
+        return;
+    }
+
+    rosPublisher_.reset();
+    std::cout << "ROS publisher disabled" << std::endl;
+}
+
+bool SLAMEngine::isROSPublisherEnabled() const {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    return rosPublisher_ != nullptr;
+}
+#endif
 
 }  // namespace vi_slam
