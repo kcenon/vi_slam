@@ -3,9 +3,12 @@ package com.vi.slam.android.streaming
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
 
+@RunWith(RobolectricTestRunner::class)
 class SignalingModelsTest {
 
     @Test
