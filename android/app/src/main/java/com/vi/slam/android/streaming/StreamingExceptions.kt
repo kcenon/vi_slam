@@ -43,3 +43,14 @@ class PacketFormatException(
     message: String,
     cause: Throwable? = null
 ) : StreamingException(message, cause)
+
+/**
+ * Exception thrown when video encoder operations fail.
+ *
+ * @param message Error description
+ * @param cause Root cause exception
+ */
+class EncoderException(
+    message: String,
+    cause: Throwable? = null
+) : StreamingException(message, cause)
