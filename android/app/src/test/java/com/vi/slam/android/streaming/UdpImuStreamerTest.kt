@@ -5,10 +5,15 @@ import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28], manifest = Config.NONE)
 class UdpImuStreamerTest {
 
     private lateinit var streamer: UdpImuStreamer
@@ -17,9 +22,12 @@ class UdpImuStreamerTest {
 
     @Before
     fun setup() {
-        streamer = UdpImuStreamer("127.0.0.1", testPort)
+        // Create receiver socket first to bind to the port
         receiverSocket = DatagramSocket(testPort)
         receiverSocket.soTimeout = 2000 // 2 second timeout
+
+        // Streamer will create its own socket (not bind to testPort, just send to it)
+        streamer = UdpImuStreamer("127.0.0.1", testPort)
     }
 
     @After
