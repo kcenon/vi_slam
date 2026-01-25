@@ -45,6 +45,7 @@ endif()
 # Source files
 set(PC_CLIENT_SOURCES
     src/main.cpp
+    src/webrtc_receiver.cpp
 )
 
 # Executable
@@ -73,6 +74,31 @@ endif()
 install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION bin
 )
+
+# Testing
+option(BUILD_TESTS "Build tests" ON)
+if(BUILD_TESTS)
+    enable_testing()
+    find_package(GTest QUIET)
+    if(GTest_FOUND)
+        add_executable(test_webrtc_receiver
+            tests/test_webrtc_receiver.cpp
+            src/webrtc_receiver.cpp
+        )
+        target_link_libraries(test_webrtc_receiver
+            ${OpenCV_LIBS}
+            Eigen3::Eigen
+            GTest::GTest
+            GTest::Main
+        )
+        add_test(NAME webrtc_receiver_test COMMAND test_webrtc_receiver)
+        message(STATUS "  Tests: ENABLED (GTest found)")
+    else()
+        message(STATUS "  Tests: DISABLED (GTest not found)")
+    endif()
+else()
+    message(STATUS "  Tests: DISABLED")
+endif()
 
 # Python bindings (optional)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
