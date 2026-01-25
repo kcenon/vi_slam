@@ -79,5 +79,24 @@ if(ENABLE_ROS)
     add_test(NAME test_ros_publisher COMMAND test_ros_publisher)
 endif()
 
+# ZMQPublisher test (conditional on ZMQ support)
+if(ENABLE_ZMQ)
+    find_package(GTest REQUIRED)
+
+    add_executable(test_zmq_publisher
+        slam/output/test_zmq_publisher.cpp
+    )
+
+    target_link_libraries(test_zmq_publisher
+        ${PROJECT_NAME}
+        cppzmq
+        nlohmann_json::nlohmann_json
+        GTest::GTest
+        GTest::Main
+    )
+
+    add_test(NAME test_zmq_publisher COMMAND test_zmq_publisher)
+endif()
+
 # E2E tests
 add_subdirectory(e2e)

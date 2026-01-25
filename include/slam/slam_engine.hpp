@@ -12,6 +12,10 @@
 #include <ros/ros.h>
 #endif
 
+#ifdef ENABLE_ZMQ
+#include "slam/output/zmq_publisher.hpp"
+#endif
+
 namespace vi_slam {
 
 // Forward declarations
@@ -69,6 +73,14 @@ public:
     bool isROSPublisherEnabled() const;
 #endif
 
+#ifdef ENABLE_ZMQ
+    // ZMQ integration
+    void enableZMQPublisher(const output::ZMQPublisherConfig& config = output::ZMQPublisherConfig());
+    void disableZMQPublisher();
+    bool isZMQPublisherEnabled() const;
+    output::ZMQPublisher* getZMQPublisher() const;
+#endif
+
 private:
     // Framework factory method
     std::unique_ptr<ISLAMFramework> createFramework(SLAMFrameworkType type);
@@ -95,6 +107,11 @@ private:
 #ifdef ENABLE_ROS
     // ROS publisher
     std::unique_ptr<output::ROSPublisher> rosPublisher_;
+#endif
+
+#ifdef ENABLE_ZMQ
+    // ZMQ publisher
+    std::unique_ptr<output::ZMQPublisher> zmqPublisher_;
 #endif
 };
 
