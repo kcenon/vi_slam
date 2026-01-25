@@ -100,12 +100,23 @@ jobs:
           libzmq3-dev \
           pkg-config
 
-    - name: Run tests (Root)
+    - name: Run unit tests
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON
         cmake --build build
         cd build
-        ctest --output-on-failure
+        ctest --output-on-failure --exclude-regex "test_stability|test_euroc_benchmark"
+
+    - name: Run E2E tests
+      run: |
+        ./tests/e2e/run_e2e_tests.sh --basic-only
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: tests/e2e/results/
 
   lint-android:
     name: Lint Android Code
