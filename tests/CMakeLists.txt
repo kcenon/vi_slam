@@ -24,6 +24,18 @@ target_link_libraries(test_openvins_adapter
 
 add_test(NAME test_openvins_adapter COMMAND test_openvins_adapter)
 
+# ORBSLAM3Adapter test
+add_executable(test_orbslam3_adapter
+    test_orbslam3_adapter.cpp
+)
+
+target_link_libraries(test_orbslam3_adapter
+    ${PROJECT_NAME}
+    ${OpenCV_LIBS}
+)
+
+add_test(NAME test_orbslam3_adapter COMMAND test_orbslam3_adapter)
+
 # SLAMEngine test
 add_executable(test_slam_engine
     test_slam_engine.cpp
