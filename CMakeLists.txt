@@ -32,6 +32,7 @@ set(COMMON_SOURCES
     src/slam/adapters/vins_mono_adapter.cpp
     src/slam/adapters/openvins_adapter.cpp
     src/slam/adapters/orbslam3_adapter.cpp
+    src/slam/output/trajectory_exporter.cpp
 )
 
 # Library
