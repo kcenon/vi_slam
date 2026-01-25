@@ -1,8 +1,129 @@
 # Streaming Module
 
-This module implements UDP IMU streaming and WebRTC DataChannel metadata transmission for the VI-SLAM Android application.
+This module implements UDP IMU streaming, WebRTC peer connection, and signaling for the VI-SLAM Android application.
 
 ## Components
+
+### WebRTC Components
+
+#### WebRtcClient
+WebRTC peer connection wrapper with lifecycle management.
+
+**Features**:
+- PeerConnectionFactory initialization
+- SDP offer/answer creation
+- ICE candidate handling
+- DataChannel creation and management
+- Connection state monitoring
+
+**Usage**:
+```kotlin
+val client = WebRtcClient(
+    context = applicationContext,
+    iceServers = IceServerConfig.getDefaultServers(),
+    listener = object : WebRtcClientListener {
+        override fun onConnected() {
+            Log.d(TAG, "WebRTC connected")
+        }
+        override fun onLocalDescription(sdp: SessionDescription) {
+            // Send SDP to remote peer via signaling
+        }
+        override fun onIceCandidate(candidate: IceCandidate) {
+            // Send ICE candidate to remote peer
+        }
+        // ... other callbacks
+    }
+)
+
+client.initialize()
+client.createPeerConnection()
+client.createDataChannel()
+client.createOffer()
+```
+
+#### SignalingClient
+WebSocket-based signaling for SDP/ICE exchange.
+
+**Protocol**: JSON-based text messages with types: offer, answer, ice_candidate, error
+
+**Usage**:
+```kotlin
+val signaling = SignalingClient(
+    serverUrl = "ws://192.168.1.100:8080/signaling",
+    listener = object : SignalingListener {
+        override fun onConnected() {
+            Log.d(TAG, "Signaling connected")
+        }
+        override fun onMessageReceived(message: SignalingMessage) {
+            when (message) {
+                is OfferMessage -> handleOffer(message)
+                is AnswerMessage -> handleAnswer(message)
+                is IceCandidateMessage -> handleIceCandidate(message)
+                is ErrorMessage -> handleError(message)
+            }
+        }
+        // ... other callbacks
+    }
+)
+
+signaling.connect()
+signaling.sendOffer(OfferMessage(sdp))
+```
+
+#### WebRtcConnectionManager
+High-level manager coordinating WebRTC and signaling.
+
+**Features**:
+- Automatic offer/answer exchange
+- ICE candidate negotiation
+- Connection lifecycle management
+- Offerer/answerer mode support
+
+**Usage**:
+```kotlin
+val manager = WebRtcConnectionManager(
+    context = applicationContext,
+    signalingServerUrl = "ws://192.168.1.100:8080/signaling",
+    iceServers = IceServerConfig.getDefaultServers(),
+    listener = object : ConnectionListener {
+        override fun onConnected() {
+            Log.d(TAG, "Connection established")
+        }
+        override fun onDataChannelReady(channel: DataChannel) {
+            // Use DataChannel for metadata
+        }
+        // ... other callbacks
+    }
+)
+
+manager.initialize()
+manager.startAsOfferer() // or startAsAnswerer()
+```
+
+#### IceServerConfig
+ICE server configuration helper.
+
+**Usage**:
+```kotlin
+// Default STUN servers
+val servers = IceServerConfig.getDefaultServers()
+
+// Custom TURN server
+val customServers = IceServerConfig.createCustomServers(
+    listOf("turn:turn.example.com:3478"),
+    username = "user",
+    password = "pass"
+)
+
+// Production config (STUN + TURN)
+val prodServers = IceServerConfig.getProductionServers(
+    turnUri = "turn:turn.example.com:3478",
+    username = "user",
+    password = "pass"
+)
+```
+
+### Data Streaming Components
 
 ### ImuData
 Binary IMU packet format implementation for sensor data transmission.
@@ -169,14 +290,45 @@ Unit tests are provided for core functionality:
 ## Integration Example
 
 ```kotlin
-class StreamingService {
+class StreamingService(private val context: Context) {
+    private lateinit var connectionManager: WebRtcConnectionManager
     private val imuStreamer = UdpImuStreamer("192.168.1.100", 15000)
     private lateinit var metadataSender: DataChannelMetadataSender
 
-    suspend fun startStreaming(dataChannel: DataChannel) {
+    suspend fun startStreaming() {
+        // Initialize WebRTC connection manager
+        connectionManager = WebRtcConnectionManager(
+            context = context,
+            signalingServerUrl = "ws://192.168.1.100:8080/signaling",
+            iceServers = IceServerConfig.getDefaultServers(),
+            listener = object : ConnectionListener {
+                override fun onConnected() {
+                    Log.d(TAG, "WebRTC connected")
+                }
+
+                override fun onDataChannelReady(channel: DataChannel) {
+                    Log.d(TAG, "DataChannel ready")
+                    setupDataChannel(channel)
+                }
+
+                override fun onDisconnected(reason: String) {
+                    Log.w(TAG, "Disconnected: $reason")
+                }
+
+                override fun onError(message: String) {
+                    Log.e(TAG, "Error: $message")
+                }
+            }
+        )
+
+        connectionManager.initialize()
+        connectionManager.startAsOfferer()
+
         // Start IMU streaming
         imuStreamer.start()
+    }
 
+    private fun setupDataChannel(dataChannel: DataChannel) {
         // Setup metadata sender
         metadataSender = DataChannelMetadataSender(dataChannel)
 
@@ -202,12 +354,15 @@ class StreamingService {
                 width = image.width,
                 height = image.height
             )
-            metadataSender.sendMetadata(metadata)
+            if (metadataSender.isChannelReady()) {
+                metadataSender.sendMetadata(metadata)
+            }
         }
     }
 
     suspend fun stopStreaming() {
         imuStreamer.stop()
+        connectionManager.disconnect()
     }
 }
 ```
