@@ -1,15 +1,17 @@
 #include "e2e_test_fixture.hpp"
 #include "latency_measurement.hpp"
-#include <Eigen/Dense>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 
+using namespace vi_slam;
 using namespace vi_slam::testing;
 
 // Compute Absolute Trajectory Error (ATE) RMSE
-double computeATERMSE(const std::vector<Pose6DoF>& estimated,
-                      const std::vector<Pose6DoF>& groundTruth) {
+double computeATERMSE(const std::vector<vi_slam::Pose6DoF>& estimated,
+                      const std::vector<vi_slam::Pose6DoF>& groundTruth) {
     if (estimated.size() != groundTruth.size() || estimated.empty()) {
         return -1.0;
     }
@@ -17,9 +19,9 @@ double computeATERMSE(const std::vector<Pose6DoF>& estimated,
     double sumSquaredError = 0.0;
 
     for (size_t i = 0; i < estimated.size(); ++i) {
-        double dx = estimated[i].position.x() - groundTruth[i].position.x();
-        double dy = estimated[i].position.y() - groundTruth[i].position.y();
-        double dz = estimated[i].position.z() - groundTruth[i].position.z();
+        double dx = estimated[i].position[0] - groundTruth[i].position[0];
+        double dy = estimated[i].position[1] - groundTruth[i].position[1];
+        double dz = estimated[i].position[2] - groundTruth[i].position[2];
 
         sumSquaredError += dx * dx + dy * dy + dz * dz;
     }
@@ -28,7 +30,7 @@ double computeATERMSE(const std::vector<Pose6DoF>& estimated,
 }
 
 // Load ground truth trajectory from file
-bool loadGroundTruth(const std::string& filePath, std::vector<Pose6DoF>& poses) {
+bool loadGroundTruth(const std::string& filePath, std::vector<vi_slam::Pose6DoF>& poses) {
     std::ifstream file(filePath);
     if (!file.is_open()) {
         std::cerr << "ERROR: Cannot open ground truth file: " << filePath << std::endl;
@@ -52,10 +54,16 @@ bool loadGroundTruth(const std::string& filePath, std::vector<Pose6DoF>& poses) 
             continue;
         }
 
-        Pose6DoF pose;
-        pose.timestamp = timestamp;
-        pose.position = Eigen::Vector3d(tx, ty, tz);
-        pose.orientation = Eigen::Quaterniond(qw, qx, qy, qz);
+        vi_slam::Pose6DoF pose;
+        pose.timestampNs = timestamp;
+        pose.position[0] = tx;
+        pose.position[1] = ty;
+        pose.position[2] = tz;
+        pose.orientation[0] = qw;
+        pose.orientation[1] = qx;
+        pose.orientation[2] = qy;
+        pose.orientation[3] = qz;
+        pose.valid = true;
 
         poses.push_back(pose);
     }
@@ -129,7 +137,7 @@ int main(int argc, char** argv) {
 
     // For this test, we assume the fixture stores estimated poses
     // In a real implementation, this would require trajectory alignment
-    std::vector<Pose6DoF> estimatedPoses;  // Retrieved from fixture
+    std::vector<vi_slam::Pose6DoF> estimatedPoses;  // Retrieved from fixture
 
     // Compute ATE RMSE
     double ateRMSE = computeATERMSE(estimatedPoses, groundTruth);

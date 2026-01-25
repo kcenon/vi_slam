@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 
+using namespace vi_slam;
 using namespace vi_slam::testing;
 using namespace std::chrono;
 
@@ -21,7 +22,7 @@ struct FrameworkMetrics {
 
 class MultiFrameworkTestFixture : public E2ETestFixture {
 public:
-    bool switchFramework(SLAMFramework framework) {
+    bool switchFramework(SLAMFrameworkType framework) {
         auto startTime = steady_clock::now();
 
         // Store current framework state
@@ -32,7 +33,15 @@ public:
         engine_.reset();
         engine_ = std::make_unique<SLAMEngine>();
 
-        if (!engine_->initialize(framework, configPath_, calibPath_)) {
+        if (!engine_->selectFramework(framework)) {
+            return false;
+        }
+
+        if (!engine_->initialize(configPath_)) {
+            return false;
+        }
+
+        if (!engine_->loadCalibration(calibPath_)) {
             return false;
         }
 
@@ -43,11 +52,11 @@ public:
     }
 
     int64_t getLastSwitchTimeMs() const { return lastSwitchTimeMs_; }
-    SLAMFramework getCurrentFramework() const { return currentFramework_; }
+    SLAMFrameworkType getCurrentFramework() const { return currentFramework_; }
 
 private:
-    SLAMFramework currentFramework_ = SLAMFramework::ORBSLAM3;
-    SLAMFramework lastFramework_ = SLAMFramework::ORBSLAM3;
+    SLAMFrameworkType currentFramework_ = SLAMFrameworkType::ORB_SLAM3;
+    SLAMFrameworkType lastFramework_ = SLAMFrameworkType::ORB_SLAM3;
     int64_t lastSwitchTimeMs_ = 0;
 };
 
@@ -55,18 +64,18 @@ int main() {
     std::cout << "=== Multi-Framework Comparison Test ===" << std::endl;
 
     // Define frameworks to test
-    std::vector<SLAMFramework> frameworks = {
-        SLAMFramework::ORBSLAM3,
-        SLAMFramework::VINS_MONO,
-        SLAMFramework::OPENVINS
-        // SLAMFramework::BASALT  // Add when available
+    std::vector<SLAMFrameworkType> frameworks = {
+        SLAMFrameworkType::ORB_SLAM3,
+        SLAMFrameworkType::VINS_MONO,
+        SLAMFrameworkType::OPENVINS
+        // SLAMFrameworkType::BASALT  // Add when available
     };
 
-    std::map<SLAMFramework, std::string> frameworkNames = {
-        {SLAMFramework::ORBSLAM3, "ORB-SLAM3"},
-        {SLAMFramework::VINS_MONO, "VINS-Mono"},
-        {SLAMFramework::OPENVINS, "OpenVINS"}
-        // {SLAMFramework::BASALT, "Basalt"}
+    std::map<SLAMFrameworkType, std::string> frameworkNames = {
+        {SLAMFrameworkType::ORB_SLAM3, "ORB-SLAM3"},
+        {SLAMFrameworkType::VINS_MONO, "VINS-Mono"},
+        {SLAMFrameworkType::OPENVINS, "OpenVINS"}
+        // {SLAMFrameworkType::BASALT, "Basalt"}
     };
 
     // Create test fixture
