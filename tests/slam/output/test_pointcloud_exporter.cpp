@@ -291,6 +291,7 @@ void testLargePointCloud() {
             break;
         }
     }
+    (void)foundVertexCount;  // Suppress unused variable warning in release builds
     assert(foundVertexCount);
 
     asciiFile.close();
