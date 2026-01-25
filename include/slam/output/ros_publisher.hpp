@@ -2,6 +2,7 @@
 #define VI_SLAM_SLAM_OUTPUT_ROS_PUBLISHER_HPP
 
 #include "common/types.hpp"
+#include "slam/output/tf_publisher.hpp"
 
 #ifdef ENABLE_ROS
 
@@ -27,6 +28,8 @@ struct ROSPublisherConfig {
     std::string childFrameId;       // Default: "base_link"
     int queueSize;                  // Default: 10
     int maxPathLength;              // Default: 1000 (0 = unlimited)
+    bool enableTF;                  // Default: true (enable TF publishing)
+    TFPublisherConfig tfConfig;     // TF publisher configuration
 
     ROSPublisherConfig()
         : poseTopicName("/slam/pose"),
@@ -35,7 +38,8 @@ struct ROSPublisherConfig {
           frameId("map"),
           childFrameId("base_link"),
           queueSize(10),
-          maxPathLength(1000) {}
+          maxPathLength(1000),
+          enableTF(true) {}
 };
 
 /**
@@ -95,6 +99,13 @@ public:
      */
     size_t getPathLength() const { return path_.poses.size(); }
 
+    /**
+     * @brief Get TF publisher instance
+     *
+     * @return Pointer to TF publisher (nullptr if TF disabled)
+     */
+    TFPublisher* getTFPublisher() { return tfPublisher_.get(); }
+
 private:
     /**
      * @brief Convert Pose6DoF to geometry_msgs/PoseStamped
@@ -123,6 +134,9 @@ private:
     ros::Publisher posePub_;
     ros::Publisher odomPub_;
     ros::Publisher pathPub_;
+
+    // TF publisher
+    std::unique_ptr<TFPublisher> tfPublisher_;
 
     // Configuration
     ROSPublisherConfig config_;

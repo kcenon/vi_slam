@@ -88,6 +88,22 @@ if(ENABLE_ROS)
     )
 
     add_test(NAME test_ros_publisher COMMAND test_ros_publisher)
+
+    # TFPublisher test
+    add_executable(test_tf_publisher
+        slam/output/test_tf_publisher.cpp
+    )
+
+    target_link_libraries(test_tf_publisher
+        ${PROJECT_NAME}
+        ${roscpp_LIBRARIES}
+        ${tf2_LIBRARIES}
+        ${tf2_ros_LIBRARIES}
+        GTest::GTest
+        GTest::Main
+    )
+
+    add_test(NAME test_tf_publisher COMMAND test_tf_publisher)
 endif()
 
 # ZMQPublisher test (conditional on ZMQ support)
