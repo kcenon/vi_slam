@@ -59,5 +59,25 @@ target_link_libraries(test_trajectory_exporter
 
 add_test(NAME test_trajectory_exporter COMMAND test_trajectory_exporter)
 
+# ROSPublisher test (conditional on ROS support)
+if(ENABLE_ROS)
+    find_package(GTest REQUIRED)
+
+    add_executable(test_ros_publisher
+        slam/output/test_ros_publisher.cpp
+    )
+
+    target_link_libraries(test_ros_publisher
+        ${PROJECT_NAME}
+        ${roscpp_LIBRARIES}
+        ${geometry_msgs_LIBRARIES}
+        ${nav_msgs_LIBRARIES}
+        GTest::GTest
+        GTest::Main
+    )
+
+    add_test(NAME test_ros_publisher COMMAND test_ros_publisher)
+endif()
+
 # E2E tests
 add_subdirectory(e2e)
