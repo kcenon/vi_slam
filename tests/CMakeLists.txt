@@ -98,5 +98,20 @@ if(ENABLE_ZMQ)
     add_test(NAME test_zmq_publisher COMMAND test_zmq_publisher)
 endif()
 
+# Visualizer test (conditional on Visualizer support)
+if(ENABLE_VISUALIZER)
+    add_executable(test_visualizer
+        visualizer/test_visualizer.cpp
+    )
+
+    target_link_libraries(test_visualizer
+        ${PROJECT_NAME}
+        glfw
+        ${OPENGL_LIBRARIES}
+    )
+
+    add_test(NAME test_visualizer COMMAND test_visualizer)
+endif()
+
 # E2E tests
 add_subdirectory(e2e)

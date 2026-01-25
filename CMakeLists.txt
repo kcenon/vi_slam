@@ -38,6 +38,15 @@ if(ENABLE_ZMQ)
     add_definitions(-DENABLE_ZMQ)
 endif()
 
+# Optional Visualizer support
+option(ENABLE_VISUALIZER "Enable Visualizer module" OFF)
+if(ENABLE_VISUALIZER)
+    find_package(glfw3 REQUIRED)
+    find_package(OpenGL REQUIRED)
+    add_definitions(-DENABLE_VISUALIZER)
+    add_definitions(-DGL_SILENCE_DEPRECATION)
+endif()
+
 # Include directories
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
@@ -61,6 +70,12 @@ if(ENABLE_ZMQ)
     )
 endif()
 
+if(ENABLE_VISUALIZER)
+    include_directories(
+        ${OPENGL_INCLUDE_DIR}
+    )
+endif()
+
 # Source files
 set(COMMON_SOURCES
     src/slam/slam_engine.cpp
@@ -79,6 +94,12 @@ endif()
 if(ENABLE_ZMQ)
     list(APPEND COMMON_SOURCES
         src/slam/output/zmq_publisher.cpp
+    )
+endif()
+
+if(ENABLE_VISUALIZER)
+    list(APPEND COMMON_SOURCES
+        src/visualizer/visualizer.cpp
     )
 endif()
 
@@ -106,6 +127,13 @@ if(ENABLE_ZMQ)
     target_link_libraries(${PROJECT_NAME}
         cppzmq
         nlohmann_json::nlohmann_json
+    )
+endif()
+
+if(ENABLE_VISUALIZER)
+    target_link_libraries(${PROJECT_NAME}
+        glfw
+        ${OPENGL_LIBRARIES}
     )
 endif()
 
@@ -138,4 +166,5 @@ message(STATUS "  OpenCV version: ${OpenCV_VERSION}")
 message(STATUS "  Eigen3 version: ${Eigen3_VERSION}")
 message(STATUS "  ROS support: ${ENABLE_ROS}")
 message(STATUS "  ZMQ support: ${ENABLE_ZMQ}")
+message(STATUS "  Visualizer support: ${ENABLE_VISUALIZER}")
 message(STATUS "")
