@@ -23,6 +23,11 @@ ROSPublisher::ROSPublisher(ros::NodeHandle& nodeHandle,
     pathPub_ = nodeHandle.advertise<nav_msgs::Path>(
         config_.pathTopicName, config_.queueSize);
 
+    // Initialize TF publisher if enabled
+    if (config_.enableTF) {
+        tfPublisher_ = std::make_unique<TFPublisher>(config_.tfConfig);
+    }
+
     // Initialize path header
     path_.header.frame_id = config_.frameId;
 }
@@ -44,6 +49,11 @@ void ROSPublisher::publishPose(const Pose6DoF& pose) {
     appendToPath(poseMsg);
     path_.header.stamp = poseMsg.header.stamp;
     pathPub_.publish(path_);
+
+    // Publish TF transforms if enabled
+    if (tfPublisher_) {
+        tfPublisher_->publishDynamicTransforms(pose);
+    }
 
     // Store for next iteration
     previousPose_ = pose;

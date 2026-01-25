@@ -89,6 +89,7 @@ set(COMMON_SOURCES
 if(ENABLE_ROS)
     list(APPEND COMMON_SOURCES
         src/slam/output/ros_publisher.cpp
+        src/slam/output/tf_publisher.cpp
     )
 endif()
 
