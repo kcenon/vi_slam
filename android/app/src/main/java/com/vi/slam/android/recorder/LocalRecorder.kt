@@ -1,8 +1,12 @@
 package com.vi.slam.android.recorder
 
 import android.util.Log
+import com.vi.slam.android.sensor.IMUSample
+import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
+import java.io.BufferedWriter
 import java.io.File
+import java.io.FileWriter
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -49,6 +53,8 @@ class LocalRecorder : IRecorder {
     companion object {
         private const val TAG = "LocalRecorder"
         private const val SESSION_FOLDER_PREFIX = "recording_"
+        private const val IMU_CSV_FILENAME = "imu_data.csv"
+        private const val IMU_BUFFER_SIZE = 8192  // 8KB buffer for CSV writes
     }
 
     // Current recorder state (thread-safe atomic reference)
@@ -67,6 +73,10 @@ class LocalRecorder : IRecorder {
     // Statistics tracking - using atomic counters for thread-safe updates
     private val frameCount = AtomicLong(0)
     private val imuSampleCount = AtomicLong(0)
+
+    // IMU CSV writer
+    private var imuCsvWriter: BufferedWriter? = null
+    private var imuCsvFile: File? = null
 
     // Lock for state transitions
     private val stateLock = Any()
@@ -104,6 +114,8 @@ class LocalRecorder : IRecorder {
                 sessionDirectory = null
                 frameCount.set(0)
                 imuSampleCount.set(0)
+                imuCsvWriter = null
+                imuCsvFile = null
 
                 // Transition to IDLE
                 state.set(RecorderState.IDLE)
@@ -179,6 +191,29 @@ class LocalRecorder : IRecorder {
                     frameCount.set(0)
                     imuSampleCount.set(0)
 
+                    // Initialize IMU CSV writer
+                    try {
+                        val csvFile = File(sessionDir, IMU_CSV_FILENAME)
+                        val writer = BufferedWriter(
+                            FileWriter(csvFile),
+                            IMU_BUFFER_SIZE
+                        )
+
+                        // Write CSV header
+                        writer.write("timestamp_ns,sensor_type,x,y,z\n")
+                        writer.flush()
+
+                        imuCsvFile = csvFile
+                        imuCsvWriter = writer
+
+                        Log.d(TAG, "IMU CSV writer initialized: ${csvFile.absolutePath}")
+                    } catch (e: Exception) {
+                        state.set(RecorderState.ERROR)
+                        return Result.failure(
+                            IllegalStateException("Failed to create IMU CSV file", e)
+                        )
+                    }
+
                     // Transition to RECORDING
                     state.set(RecorderState.RECORDING)
 
@@ -236,11 +271,29 @@ class LocalRecorder : IRecorder {
                     val finalImuSampleCount = imuSampleCount.get()
 
                     // TODO: Finalize video file (will be implemented in video encoding task)
-                    // TODO: Close IMU CSV writer (will be implemented in IMU writer task)
+
+                    // Close IMU CSV writer
+                    var imuFilePath: String? = null
+                    try {
+                        imuCsvWriter?.let { writer ->
+                            writer.flush()
+                            writer.close()
+                            imuFilePath = imuCsvFile?.absolutePath
+                            Log.d(TAG, "IMU CSV file closed: $imuFilePath")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to close IMU CSV writer", e)
+                        // Continue with stopping, but mark as error in summary
+                    } finally {
+                        imuCsvWriter = null
+                        imuCsvFile = null
+                    }
+
                     // TODO: Generate metadata.json (will be implemented in metadata task)
 
-                    // Collect output files (will be populated as features are implemented)
+                    // Collect output files
                     val outputFiles = mutableListOf<String>()
+                    imuFilePath?.let { outputFiles.add(it) }
 
                     // Create recording summary
                     val summary = RecordingSummary(
@@ -251,7 +304,7 @@ class LocalRecorder : IRecorder {
                         durationMs = durationMs,
                         outputFiles = outputFiles,
                         videoFile = null,  // TODO: Set after video encoding is implemented
-                        imuFile = null,    // TODO: Set after IMU writer is implemented
+                        imuFile = imuFilePath,
                         metadataFile = null,  // TODO: Set after metadata generation is implemented
                         errorMessage = null
                     )
@@ -295,10 +348,31 @@ class LocalRecorder : IRecorder {
             // For now, just count frames
             frameCount.incrementAndGet()
 
-            // TODO: Write IMU samples to CSV (will be implemented in IMU writer task)
-            // For now, just count IMU samples
-            val totalImuSamples = data.imuSamplesBefore.size + data.imuSamplesAfter.size
-            imuSampleCount.addAndGet(totalImuSamples.toLong())
+            // Write IMU samples to CSV
+            val writer = imuCsvWriter
+            if (writer != null) {
+                // Write IMU samples before frame
+                for (sample in data.imuSamplesBefore) {
+                    writeImuSample(writer, sample)
+                }
+
+                // Write IMU samples after frame
+                for (sample in data.imuSamplesAfter) {
+                    writeImuSample(writer, sample)
+                }
+
+                // Update IMU sample count
+                val totalImuSamples = data.imuSamplesBefore.size + data.imuSamplesAfter.size
+                imuSampleCount.addAndGet(totalImuSamples.toLong())
+
+                // Flush periodically (every 10 frames) to prevent data loss
+                val currentFrameCount = frameCount.get()
+                if (currentFrameCount % 10 == 0L) {
+                    writer.flush()
+                }
+            } else {
+                Log.w(TAG, "IMU CSV writer is null, skipping IMU data write")
+            }
 
             // Log periodically for debugging (every 100 frames)
             val currentFrameCount = frameCount.get()
@@ -384,5 +458,25 @@ class LocalRecorder : IRecorder {
         val uuid = UUID.randomUUID().toString().substring(0, 8)
 
         return "${timestamp}_$uuid"
+    }
+
+    /**
+     * Write a single IMU sample to CSV file.
+     *
+     * CSV format: timestamp_ns,sensor_type,x,y,z
+     * - timestamp_ns: Nanosecond timestamp
+     * - sensor_type: "accel" or "gyro"
+     * - x, y, z: Measurement values
+     *
+     * @param writer BufferedWriter to CSV file
+     * @param sample IMU sample to write
+     */
+    private fun writeImuSample(writer: BufferedWriter, sample: IMUSample) {
+        val sensorType = when (sample.type) {
+            SensorType.ACCELEROMETER -> "accel"
+            SensorType.GYROSCOPE -> "gyro"
+        }
+
+        writer.write("${sample.timestampNs},$sensorType,${sample.x},${sample.y},${sample.z}\n")
     }
 }
