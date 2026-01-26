@@ -36,6 +36,18 @@ target_link_libraries(test_orbslam3_adapter
 
 add_test(NAME test_orbslam3_adapter COMMAND test_orbslam3_adapter)
 
+# BasaltAdapter test
+add_executable(test_basalt_adapter
+    test_basalt_adapter.cpp
+)
+
+target_link_libraries(test_basalt_adapter
+    ${PROJECT_NAME}
+    ${OpenCV_LIBS}
+)
+
+add_test(NAME test_basalt_adapter COMMAND test_basalt_adapter)
+
 # SLAMEngine test
 add_executable(test_slam_engine
     test_slam_engine.cpp
