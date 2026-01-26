@@ -297,7 +297,8 @@ class LocalRecorder : IRecorder {
 
             // TODO: Write IMU samples to CSV (will be implemented in IMU writer task)
             // For now, just count IMU samples
-            imuSampleCount.addAndGet(data.imuSamples.size.toLong())
+            val totalImuSamples = data.imuSamplesBefore.size + data.imuSamplesAfter.size
+            imuSampleCount.addAndGet(totalImuSamples.toLong())
 
             // Log periodically for debugging (every 100 frames)
             val currentFrameCount = frameCount.get()
