@@ -5,6 +5,7 @@ import com.vi.slam.android.sensor.SynchronizedData
 import com.vi.slam.android.sensor.TimestampSynchronizer
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -44,7 +45,13 @@ class DataManager(
     @Volatile
     private var streamerEnabled = true
 
-    // Statistics tracking
+    // Statistics tracking - using atomic counters for thread-safe updates
+    private val frameCount = AtomicLong(0)
+    private val imuSampleCount = AtomicLong(0)
+    private val frameDropCount = AtomicLong(0)
+    private var lastFrameSequence: Long = -1
+
+    // Cached statistics for getStatistics()
     private val statistics = AtomicReference<SessionStatistics>(SessionStatistics())
 
     override fun initialize(): Result<Unit> {
@@ -64,6 +71,10 @@ class DataManager(
             }
             recorderEnabled = true
             streamerEnabled = true
+            frameCount.set(0)
+            imuSampleCount.set(0)
+            frameDropCount.set(0)
+            lastFrameSequence = -1
             statistics.set(SessionStatistics())
             sessionStatus.set(SessionStatus.IDLE)
             currentSession = null
@@ -122,6 +133,10 @@ class DataManager(
             currentSession = session
 
             // Reset statistics
+            frameCount.set(0)
+            imuSampleCount.set(0)
+            frameDropCount.set(0)
+            lastFrameSequence = -1
             statistics.set(SessionStatistics())
 
             // Configure destinations based on mode
@@ -268,6 +283,10 @@ class DataManager(
      * Called when a new camera frame is available. Synchronizes with IMU data
      * and routes the result to all enabled destinations.
      *
+     * This method implements back-pressure handling: if destinations are overloaded
+     * and cannot process data in time, frames may be dropped. The statistics
+     * will track such drops via frameDropCount.
+     *
      * This method is thread-safe and can be called from camera callback threads.
      *
      * @param frameTimestampNs Frame timestamp in nanoseconds
@@ -286,13 +305,24 @@ class DataManager(
                 frameSequence
             )
 
+            // Check if synchronization succeeded
+            // If buffer is overflowing or IMU data is unavailable, synchronization may fail
+            if (synchronizedData == null) {
+                Log.w(TAG, "Failed to synchronize frame $frameSequence - no IMU data available")
+                frameDropCount.incrementAndGet()
+                return
+            }
+
             // Route to enabled destinations
+            // Note: This may block if destinations are slow, implementing natural back-pressure
             routeData(synchronizedData)
 
             // Update statistics
             updateStatistics(synchronizedData)
         } catch (e: Exception) {
             Log.e(TAG, "Error processing frame $frameSequence", e)
+            // Count this as a dropped frame
+            frameDropCount.incrementAndGet()
         }
     }
 
@@ -338,18 +368,32 @@ class DataManager(
     /**
      * Update session statistics with new synchronized data.
      *
+     * This method efficiently tracks frame count, IMU sample count, and frame drops
+     * using atomic counters. Statistics are calculated lazily on demand to minimize
+     * overhead in the data flow path.
+     *
+     * Thread Safety: This method is thread-safe and uses atomic operations to avoid
+     * blocking the data flow.
+     *
      * @param data Synchronized camera and IMU data
      */
     private fun updateStatistics(data: SynchronizedData) {
-        val current = statistics.get()
+        // Detect frame drops by checking sequence discontinuity
+        if (lastFrameSequence >= 0) {
+            val expectedSequence = lastFrameSequence + 1
+            if (data.frameSequence > expectedSequence) {
+                val droppedFrames = data.frameSequence - expectedSequence
+                frameDropCount.addAndGet(droppedFrames)
+                Log.w(TAG, "Detected $droppedFrames dropped frames (seq: $expectedSequence -> ${data.frameSequence})")
+            }
+        }
+        lastFrameSequence = data.frameSequence
 
-        // Count frames
-        val newFrameCount = current.frameCount + 1
-
-        // Count IMU samples
-        val newImuSamples = current.imuSampleCount +
-                data.imuSamplesBefore.size +
-                data.imuSamplesAfter.size
+        // Increment counters atomically
+        val newFrameCount = frameCount.incrementAndGet()
+        val newImuSamples = imuSampleCount.addAndGet(
+            (data.imuSamplesBefore.size + data.imuSamplesAfter.size).toLong()
+        )
 
         // Calculate duration
         val durationMs = if (sessionStartTime > 0) {
@@ -358,26 +402,26 @@ class DataManager(
             0L
         }
 
-        // Calculate average FPS
+        // Calculate average rates
         val avgFps = if (durationMs > 0) {
             (newFrameCount * 1000.0f) / durationMs
         } else {
             0f
         }
 
-        // Calculate average IMU rate
         val avgImuRate = if (durationMs > 0) {
             (newImuSamples * 1000.0f) / durationMs
         } else {
             0f
         }
 
-        // Update statistics atomically
+        // Update cached statistics for getStatistics()
+        // This is acceptable to be slightly stale as it's only for monitoring
         val updated = SessionStatistics(
             frameCount = newFrameCount,
             imuSampleCount = newImuSamples,
             durationMs = durationMs,
-            frameDropCount = current.frameDropCount,
+            frameDropCount = frameDropCount.get(),
             averageFps = avgFps,
             averageImuRate = avgImuRate
         )

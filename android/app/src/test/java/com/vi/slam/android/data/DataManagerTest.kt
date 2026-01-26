@@ -452,6 +452,143 @@ class DataManagerTest {
         dataManager.stopSession()
     }
 
+    @Test
+    fun testStatistics_frameDropDetection() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        // Send frames with discontinuous sequence numbers
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+        dataManager.onFrameAvailable(frameTimestampNs = 1050000000L, frameSequence = 2)
+        // Skip sequence 3, 4, 5 - simulating 3 dropped frames
+        dataManager.onFrameAvailable(frameTimestampNs = 1100000000L, frameSequence = 6)
+        dataManager.onFrameAvailable(frameTimestampNs = 1150000000L, frameSequence = 7)
+
+        val stats = dataManager.getStatistics()
+
+        assertEquals("Frame count should be 4", 4, stats.frameCount)
+        assertEquals("Frame drop count should be 3", 3, stats.frameDropCount)
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testStatistics_noDropsWithContinuousSequence() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        // Send frames with continuous sequence numbers
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+        dataManager.onFrameAvailable(frameTimestampNs = 1050000000L, frameSequence = 2)
+        dataManager.onFrameAvailable(frameTimestampNs = 1100000000L, frameSequence = 3)
+        dataManager.onFrameAvailable(frameTimestampNs = 1150000000L, frameSequence = 4)
+
+        val stats = dataManager.getStatistics()
+
+        assertEquals("Frame count should be 4", 4, stats.frameCount)
+        assertEquals("Frame drop count should be 0", 0, stats.frameDropCount)
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testStatistics_averageFpsCalculation() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        // Wait a bit to accumulate some duration
+        Thread.sleep(100)
+
+        // Simulate multiple frames
+        for (i in 1..10) {
+            dataManager.onFrameAvailable(
+                frameTimestampNs = 1000000000L + i * 33_000_000L,
+                frameSequence = i.toLong()
+            )
+        }
+
+        val stats = dataManager.getStatistics()
+
+        assertEquals("Frame count should be 10", 10, stats.frameCount)
+        assertTrue("Average FPS should be positive", stats.averageFps > 0f)
+        assertTrue("Duration should be > 100ms", stats.durationMs >= 100)
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testStatistics_resetBetweenSessions() {
+        dataManager.initialize()
+
+        // First session
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+        dataManager.onFrameAvailable(frameTimestampNs = 1050000000L, frameSequence = 2)
+        val stats1 = dataManager.getStatistics()
+        dataManager.stopSession()
+
+        // Second session - statistics should reset
+        dataManager.startSession(SessionMode.STREAM_ONLY)
+        val stats2 = dataManager.getStatistics()
+
+        assertEquals("First session should have 2 frames", 2, stats1.frameCount)
+        assertEquals("Second session should start with 0 frames", 0, stats2.frameCount)
+        assertEquals("Second session should start with 0 drops", 0, stats2.frameDropCount)
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testStatistics_sessionSummaryContainsFinalStats() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        // Process some frames
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+        dataManager.onFrameAvailable(frameTimestampNs = 1050000000L, frameSequence = 2)
+        // Simulate frame drop
+        dataManager.onFrameAvailable(frameTimestampNs = 1150000000L, frameSequence = 5)
+
+        val summary = dataManager.stopSession().getOrNull()!!
+
+        assertNotNull("Summary statistics should not be null", summary.statistics)
+        assertEquals("Summary should have correct frame count", 3, summary.statistics.frameCount)
+        assertEquals("Summary should have correct drop count", 2, summary.statistics.frameDropCount)
+        assertTrue("Summary should have positive duration", summary.statistics.durationMs > 0)
+    }
+
+    @Test
+    fun testStatistics_performanceOverhead() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        val frameCount = 1000
+        val startTime = System.nanoTime()
+
+        // Process many frames
+        for (i in 1..frameCount) {
+            dataManager.onFrameAvailable(
+                frameTimestampNs = 1000000000L + i * 33_000_000L,
+                frameSequence = i.toLong()
+            )
+        }
+
+        val endTime = System.nanoTime()
+        val totalTimeMs = (endTime - startTime) / 1_000_000.0
+
+        // Each frame should process in < 1ms on average (statistics overhead < 1%)
+        val avgTimePerFrame = totalTimeMs / frameCount
+        assertTrue(
+            "Average time per frame ($avgTimePerFrame ms) should be < 1ms",
+            avgTimePerFrame < 1.0
+        )
+
+        val stats = dataManager.getStatistics()
+        assertEquals("All frames should be counted", frameCount.toLong(), stats.frameCount)
+
+        dataManager.stopSession()
+    }
+
     /**
      * Mock data destination for testing.
      */
