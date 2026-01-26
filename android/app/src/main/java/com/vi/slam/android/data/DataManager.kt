@@ -1,6 +1,7 @@
 package com.vi.slam.android.data
 
 import android.util.Log
+import com.vi.slam.android.sensor.SynchronizedData
 import com.vi.slam.android.sensor.TimestampSynchronizer
 import java.io.File
 import java.util.UUID
