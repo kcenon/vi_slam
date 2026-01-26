@@ -1,7 +1,7 @@
 package com.vi.slam.android.recorder
 
 import com.vi.slam.android.sensor.IMUSample
-import com.vi.slam.android.sensor.IMUSensorType
+import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
 import org.junit.Assert.*
 import org.junit.Before
@@ -340,26 +340,192 @@ class LocalRecorderTest {
         }
     }
 
+    // ========== IMU CSV Writer Tests ==========
+
+    @Test
+    fun testImuCsvWriter_fileCreatedOnStart() {
+        recorder.initialize(config)
+
+        val result = recorder.startRecording()
+        assertTrue("Start recording should succeed", result.isSuccess)
+
+        val recordingInfo = result.getOrNull()
+        assertNotNull("Recording info should not be null", recordingInfo)
+
+        val sessionDir = File(recordingInfo!!.outputPath)
+        val csvFile = File(sessionDir, "imu_data.csv")
+
+        assertTrue("IMU CSV file should be created", csvFile.exists())
+        assertTrue("IMU CSV file should be readable", csvFile.canRead())
+
+        // Cleanup
+        recorder.stopRecording()
+    }
+
+    @Test
+    fun testImuCsvWriter_headerWrittenCorrectly() {
+        recorder.initialize(config)
+        val result = recorder.startRecording()
+
+        val recordingInfo = result.getOrNull()
+        assertNotNull(recordingInfo)
+
+        // Stop to flush and close the file
+        recorder.stopRecording()
+
+        val sessionDir = File(recordingInfo!!.outputPath)
+        val csvFile = File(sessionDir, "imu_data.csv")
+
+        val lines = csvFile.readLines()
+        assertTrue("CSV file should have at least header", lines.isNotEmpty())
+
+        val header = lines[0]
+        assertEquals(
+            "CSV header should match expected format",
+            "timestamp_ns,sensor_type,x,y,z",
+            header
+        )
+    }
+
+    @Test
+    fun testImuCsvWriter_writesImuSamples() {
+        recorder.initialize(config)
+        val result = recorder.startRecording()
+
+        val recordingInfo = result.getOrNull()
+        assertNotNull(recordingInfo)
+
+        // Send mock data with IMU samples
+        val mockData = createMockSynchronizedData(imuSampleCount = 6)
+        recorder.onData(mockData)
+        recorder.onData(mockData)  // Send twice
+
+        // Stop to flush and close the file
+        val summary = recorder.stopRecording().getOrNull()
+        assertNotNull(summary)
+
+        val sessionDir = File(recordingInfo!!.outputPath)
+        val csvFile = File(sessionDir, "imu_data.csv")
+
+        val lines = csvFile.readLines()
+        // Header + (6 samples per frame * 2 frames)
+        assertTrue(
+            "CSV should have header + 12 data rows",
+            lines.size >= 13  // Allow for potential extra lines
+        )
+
+        // Check first data row format
+        val firstDataRow = lines[1]
+        val parts = firstDataRow.split(",")
+        assertEquals("Row should have 5 columns", 5, parts.size)
+
+        // Validate timestamp is numeric
+        assertTrue("Timestamp should be numeric", parts[0].toLongOrNull() != null)
+
+        // Validate sensor type
+        assertTrue(
+            "Sensor type should be 'accel' or 'gyro'",
+            parts[1] == "accel" || parts[1] == "gyro"
+        )
+
+        // Validate x, y, z are numeric
+        assertTrue("X value should be numeric", parts[2].toFloatOrNull() != null)
+        assertTrue("Y value should be numeric", parts[3].toFloatOrNull() != null)
+        assertTrue("Z value should be numeric", parts[4].toFloatOrNull() != null)
+    }
+
+    @Test
+    fun testImuCsvWriter_filePathInSummary() {
+        recorder.initialize(config)
+        val result = recorder.startRecording()
+
+        val recordingInfo = result.getOrNull()
+        assertNotNull(recordingInfo)
+
+        // Stop recording
+        val summary = recorder.stopRecording().getOrNull()
+        assertNotNull(summary)
+
+        // Check that imuFile is set in summary
+        assertNotNull("Summary should contain IMU file path", summary!!.imuFile)
+
+        val imuFile = File(summary.imuFile!!)
+        assertTrue("IMU file should exist", imuFile.exists())
+        assertEquals("IMU filename should be correct", "imu_data.csv", imuFile.name)
+    }
+
+    @Test
+    fun testImuCsvWriter_correctSampleCount() {
+        recorder.initialize(config)
+        recorder.startRecording()
+
+        // Send mock data with known IMU sample count
+        val mockData = createMockSynchronizedData(imuSampleCount = 10)
+        recorder.onData(mockData)
+        recorder.onData(mockData)
+        recorder.onData(mockData)  // 3 frames * 10 samples = 30 samples
+
+        val summary = recorder.stopRecording().getOrNull()
+        assertNotNull(summary)
+
+        assertEquals(
+            "Summary should report correct IMU sample count",
+            30L,
+            summary!!.imuSampleCount
+        )
+    }
+
+    @Test
+    fun testImuCsvWriter_closedProperlyOnStop() {
+        recorder.initialize(config)
+        val result = recorder.startRecording()
+
+        val recordingInfo = result.getOrNull()
+        assertNotNull(recordingInfo)
+
+        // Send some data
+        recorder.onData(createMockSynchronizedData(imuSampleCount = 5))
+
+        // Stop recording
+        val summary = recorder.stopRecording().getOrNull()
+        assertNotNull(summary)
+
+        val csvFile = File(summary!!.imuFile!!)
+
+        // Verify file can be read (meaning it was closed properly)
+        val lines = csvFile.readLines()
+        assertTrue("CSV file should be readable after stop", lines.isNotEmpty())
+    }
+
     // ========== Helper Methods ==========
 
     private fun createMockSynchronizedData(imuSampleCount: Int = 3): SynchronizedData {
-        val imuSamples = List(imuSampleCount) { index ->
+        val timestamp = System.nanoTime()
+        val imuSamplesBefore = List(imuSampleCount / 2) { index ->
             IMUSample(
-                timestamp = System.nanoTime() + index * 1_000_000,
-                sensorType = if (index % 2 == 0) IMUSensorType.ACCELEROMETER else IMUSensorType.GYROSCOPE,
+                timestampNs = timestamp + index * 1_000_000,
+                type = if (index % 2 == 0) SensorType.ACCELEROMETER else SensorType.GYROSCOPE,
                 x = 0.1f,
                 y = 0.2f,
                 z = 0.3f
             )
         }
+        val imuSamplesAfter = List(imuSampleCount - imuSampleCount / 2) { index ->
+            IMUSample(
+                timestampNs = timestamp + (imuSampleCount / 2 + index) * 1_000_000,
+                type = if (index % 2 == 0) SensorType.GYROSCOPE else SensorType.ACCELEROMETER,
+                x = 0.4f,
+                y = 0.5f,
+                z = 0.6f
+            )
+        }
 
         return SynchronizedData(
-            frameBuffer = ByteArray(640 * 480),  // Mock frame data
-            width = 640,
-            height = 480,
-            frameTimestamp = System.nanoTime(),
+            frameTimestampNs = timestamp,
             frameSequence = 0L,
-            imuSamples = imuSamples
+            imuSamplesBefore = imuSamplesBefore,
+            imuSamplesAfter = imuSamplesAfter,
+            interpolatedImu = null
         )
     }
 }
