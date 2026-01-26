@@ -4,7 +4,9 @@ import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.media.MediaMuxer
+import android.os.Build
 import android.util.Log
+import com.google.gson.GsonBuilder
 import com.vi.slam.android.sensor.IMUSample
 import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
@@ -61,6 +63,7 @@ class LocalRecorder : IRecorder {
         private const val SESSION_FOLDER_PREFIX = "recording_"
         private const val IMU_CSV_FILENAME = "imu_data.csv"
         private const val VIDEO_FILENAME = "video.mp4"
+        private const val METADATA_FILENAME = "metadata.json"
         private const val IMU_BUFFER_SIZE = 8192  // 8KB buffer for CSV writes
         private const val VIDEO_MIME_TYPE = "video/avc"  // H.264
         private const val VIDEO_IFRAME_INTERVAL = 1  // I-frame interval in seconds
@@ -415,12 +418,34 @@ class LocalRecorder : IRecorder {
                         imuCsvFile = null
                     }
 
-                    // TODO: Generate metadata.json (will be implemented in metadata task)
+                    // Generate metadata.json
+                    var metadataFilePath: String? = null
+                    try {
+                        val currentConfig = config
+                        if (currentConfig?.enableMetadata == true) {
+                            metadataFilePath = generateMetadata(
+                                sessionDir = sessionDir,
+                                recordingId = recording.recordingId,
+                                startTime = recordingStartTime,
+                                durationMs = durationMs,
+                                frameCount = finalFrameCount,
+                                imuSampleCount = finalImuSampleCount,
+                                config = currentConfig,
+                                videoFilePath = videoFilePath,
+                                imuFilePath = imuFilePath
+                            )
+                            Log.d(TAG, "Metadata file generated: $metadataFilePath")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to generate metadata.json", e)
+                        // Continue with stopping, metadata generation is not critical
+                    }
 
                     // Collect output files
                     val outputFiles = mutableListOf<String>()
                     videoFilePath?.let { outputFiles.add(it) }
                     imuFilePath?.let { outputFiles.add(it) }
+                    metadataFilePath?.let { outputFiles.add(it) }
 
                     // Create recording summary
                     val summary = RecordingSummary(
@@ -432,7 +457,7 @@ class LocalRecorder : IRecorder {
                         outputFiles = outputFiles,
                         videoFile = videoFilePath,
                         imuFile = imuFilePath,
-                        metadataFile = null,  // TODO: Set after metadata generation is implemented
+                        metadataFile = metadataFilePath,
                         errorMessage = null
                     )
 
@@ -739,5 +764,82 @@ class LocalRecorder : IRecorder {
         }
 
         writer.write("${sample.timestampNs},$sensorType,${sample.x},${sample.y},${sample.z}\n")
+    }
+
+    /**
+     * Generate metadata.json file for the recording session.
+     *
+     * Creates a comprehensive metadata file containing:
+     * - Recording session information (ID, timestamps, duration, counts)
+     * - Device information (manufacturer, model, Android version)
+     * - Camera configuration (resolution, FPS, bitrate)
+     * - IMU sensor information (placeholder for future enhancement)
+     * - Output file paths
+     *
+     * The metadata file follows a structured JSON format compatible with
+     * SLAM dataset standards and enables reproducibility of recordings.
+     *
+     * @param sessionDir Session output directory
+     * @param recordingId Unique recording identifier
+     * @param startTime Recording start timestamp in milliseconds
+     * @param durationMs Recording duration in milliseconds
+     * @param frameCount Total number of frames recorded
+     * @param imuSampleCount Total number of IMU samples recorded
+     * @param config Recorder configuration
+     * @param videoFilePath Path to video file (null if not available)
+     * @param imuFilePath Path to IMU CSV file (null if not available)
+     * @return Absolute path to generated metadata.json file
+     */
+    private fun generateMetadata(
+        sessionDir: File,
+        recordingId: String,
+        startTime: Long,
+        durationMs: Long,
+        frameCount: Long,
+        imuSampleCount: Long,
+        config: RecorderConfig,
+        videoFilePath: String?,
+        imuFilePath: String?
+    ): String {
+        val metadataFile = File(sessionDir, METADATA_FILENAME)
+
+        // Build metadata structure
+        val metadata = mapOf(
+            "recording_id" to recordingId,
+            "start_time" to startTime,
+            "duration_ms" to durationMs,
+            "frame_count" to frameCount,
+            "imu_sample_count" to imuSampleCount,
+            "device" to mapOf(
+                "manufacturer" to Build.MANUFACTURER,
+                "model" to Build.MODEL,
+                "android_version" to Build.VERSION.RELEASE,
+                "sdk_int" to Build.VERSION.SDK_INT
+            ),
+            "camera" to mapOf(
+                "width" to config.videoWidth,
+                "height" to config.videoHeight,
+                "fps" to config.videoFps,
+                "bitrate" to config.videoBitrate,
+                "format" to config.videoFormat.name
+            ),
+            "imu" to mapOf(
+                "format" to config.imuFormat.name,
+                "note" to "Detailed IMU sensor calibration will be added in future updates"
+            ),
+            "output_files" to mapOf(
+                "video" to (videoFilePath?.let { File(it).name } ?: "N/A"),
+                "imu" to (imuFilePath?.let { File(it).name } ?: "N/A"),
+                "metadata" to METADATA_FILENAME
+            )
+        )
+
+        // Write JSON to file
+        val gson = GsonBuilder().setPrettyPrinting().create()
+        val jsonString = gson.toJson(metadata)
+
+        metadataFile.writeText(jsonString)
+
+        return metadataFile.absolutePath
     }
 }
