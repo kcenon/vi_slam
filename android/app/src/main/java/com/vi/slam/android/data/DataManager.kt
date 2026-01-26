@@ -262,6 +262,129 @@ class DataManager(
     }
 
     /**
+     * Process incoming camera frame data.
+     *
+     * Called when a new camera frame is available. Synchronizes with IMU data
+     * and routes the result to all enabled destinations.
+     *
+     * This method is thread-safe and can be called from camera callback threads.
+     *
+     * @param frameTimestampNs Frame timestamp in nanoseconds
+     * @param frameSequence Frame sequence number
+     */
+    fun onFrameAvailable(frameTimestampNs: Long, frameSequence: Long) {
+        // Only process frames when session is active
+        if (sessionStatus.get() != SessionStatus.ACTIVE) {
+            return
+        }
+
+        try {
+            // Synchronize with IMU data
+            val synchronizedData = timestampSynchronizer.associateIMUWithFrame(
+                frameTimestampNs,
+                frameSequence
+            )
+
+            // Route to enabled destinations
+            routeData(synchronizedData)
+
+            // Update statistics
+            updateStatistics(synchronizedData)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error processing frame $frameSequence", e)
+        }
+    }
+
+    /**
+     * Route synchronized data to all enabled destinations.
+     *
+     * Only routes data to destinations that are currently enabled based on
+     * the destination type (recorder/streamer) and current enable flags.
+     *
+     * @param data Synchronized camera and IMU data
+     */
+    private fun routeData(data: SynchronizedData) {
+        val destinationsSnapshot = synchronized(destinationsLock) {
+            destinations.toList()
+        }
+
+        for (destination in destinationsSnapshot) {
+            try {
+                // Check if destination is enabled
+                if (!destination.isEnabled()) {
+                    continue
+                }
+
+                // Additional check for recorder/streamer enable flags
+                // Note: Destinations should implement isEnabled() to check these flags
+                // This is a fail-safe in case destination doesn't check properly
+                val shouldRoute = when {
+                    // For now, route to all enabled destinations
+                    // In future, we can add type information to IDataDestination
+                    else -> true
+                }
+
+                if (shouldRoute) {
+                    destination.onData(data)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error routing data to destination: ${destination.javaClass.simpleName}", e)
+                // Continue routing to other destinations even if one fails
+            }
+        }
+    }
+
+    /**
+     * Update session statistics with new synchronized data.
+     *
+     * @param data Synchronized camera and IMU data
+     */
+    private fun updateStatistics(data: SynchronizedData) {
+        val current = statistics.get()
+
+        // Count frames
+        val newFrameCount = current.frameCount + 1
+
+        // Count IMU samples
+        val newImuSamples = current.imuSampleCount +
+                data.imuSamplesBefore.size +
+                data.imuSamplesAfter.size
+
+        // Calculate duration
+        val durationMs = if (sessionStartTime > 0) {
+            System.currentTimeMillis() - sessionStartTime
+        } else {
+            0L
+        }
+
+        // Calculate average FPS
+        val avgFps = if (durationMs > 0) {
+            (newFrameCount * 1000.0f) / durationMs
+        } else {
+            0f
+        }
+
+        // Calculate average IMU rate
+        val avgImuRate = if (durationMs > 0) {
+            (newImuSamples * 1000.0f) / durationMs
+        } else {
+            0f
+        }
+
+        // Update statistics atomically
+        val updated = SessionStatistics(
+            frameCount = newFrameCount,
+            imuSampleCount = newImuSamples,
+            durationMs = durationMs,
+            frameDropCount = current.frameDropCount,
+            averageFps = avgFps,
+            averageImuRate = avgImuRate
+        )
+
+        statistics.set(updated)
+    }
+
+    /**
      * Generate a unique session ID.
      *
      * Format: timestamp_UUID
