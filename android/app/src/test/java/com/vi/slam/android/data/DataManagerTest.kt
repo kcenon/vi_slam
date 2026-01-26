@@ -283,6 +283,175 @@ class DataManagerTest {
         dataManager.stopSession()
     }
 
+    @Test
+    fun testOnFrameAvailable_routesToDestinations() {
+        dataManager.initialize()
+
+        val destination1 = MockDataDestination()
+        val destination2 = MockDataDestination()
+        dataManager.registerDestination(destination1)
+        dataManager.registerDestination(destination2)
+
+        dataManager.startSession(SessionMode.RECORD_AND_STREAM)
+
+        // Simulate frame arrival
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+
+        // Verify data was routed to both destinations
+        assertEquals(
+            "Destination 1 should receive 1 frame",
+            1,
+            destination1.receivedData.size
+        )
+        assertEquals(
+            "Destination 2 should receive 1 frame",
+            1,
+            destination2.receivedData.size
+        )
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testOnFrameAvailable_doesNotRouteWhenSessionNotActive() {
+        dataManager.initialize()
+
+        val destination = MockDataDestination()
+        dataManager.registerDestination(destination)
+
+        // Call onFrameAvailable without starting session
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+
+        // Verify no data was routed
+        assertEquals(
+            "Destination should not receive data when session is not active",
+            0,
+            destination.receivedData.size
+        )
+    }
+
+    @Test
+    fun testOnFrameAvailable_skipsDisabledDestinations() {
+        dataManager.initialize()
+
+        val enabledDestination = MockDataDestination()
+        val disabledDestination = MockDataDestination()
+        disabledDestination.setEnabled(false)
+
+        dataManager.registerDestination(enabledDestination)
+        dataManager.registerDestination(disabledDestination)
+
+        dataManager.startSession(SessionMode.RECORD_AND_STREAM)
+
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+
+        assertEquals(
+            "Enabled destination should receive data",
+            1,
+            enabledDestination.receivedData.size
+        )
+        assertEquals(
+            "Disabled destination should not receive data",
+            0,
+            disabledDestination.receivedData.size
+        )
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testOnFrameAvailable_updatesStatistics() {
+        dataManager.initialize()
+        dataManager.startSession(SessionMode.RECORD_ONLY)
+
+        val initialStats = dataManager.getStatistics()
+        assertEquals("Initial frame count should be 0", 0, initialStats.frameCount)
+
+        // Simulate multiple frames
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+        dataManager.onFrameAvailable(frameTimestampNs = 1050000000L, frameSequence = 2)
+        dataManager.onFrameAvailable(frameTimestampNs = 1100000000L, frameSequence = 3)
+
+        val finalStats = dataManager.getStatistics()
+        assertEquals("Frame count should be 3", 3, finalStats.frameCount)
+        assertTrue("Duration should be positive", finalStats.durationMs > 0)
+        assertTrue("Average FPS should be positive", finalStats.averageFps > 0)
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testOnFrameAvailable_handlesExceptionInDestination() {
+        dataManager.initialize()
+
+        val goodDestination = MockDataDestination()
+        val badDestination = object : IDataDestination {
+            override fun onData(data: SynchronizedData) {
+                throw RuntimeException("Test exception")
+            }
+
+            override fun isEnabled(): Boolean = true
+        }
+
+        dataManager.registerDestination(badDestination)
+        dataManager.registerDestination(goodDestination)
+
+        dataManager.startSession(SessionMode.RECORD_AND_STREAM)
+
+        // Should not throw despite badDestination throwing
+        dataManager.onFrameAvailable(frameTimestampNs = 1000000000L, frameSequence = 1)
+
+        // goodDestination should still receive data
+        assertEquals(
+            "Good destination should receive data despite bad destination throwing",
+            1,
+            goodDestination.receivedData.size
+        )
+
+        dataManager.stopSession()
+    }
+
+    @Test
+    fun testMultipleDestinations_receiveIdenticalData() {
+        dataManager.initialize()
+
+        val destination1 = MockDataDestination()
+        val destination2 = MockDataDestination()
+        dataManager.registerDestination(destination1)
+        dataManager.registerDestination(destination2)
+
+        dataManager.startSession(SessionMode.RECORD_AND_STREAM)
+
+        dataManager.onFrameAvailable(frameTimestampNs = 1234567890L, frameSequence = 42)
+
+        assertEquals(
+            "Both destinations should receive data",
+            1,
+            destination1.receivedData.size
+        )
+        assertEquals(
+            "Both destinations should receive data",
+            1,
+            destination2.receivedData.size
+        )
+
+        val data1 = destination1.receivedData[0]
+        val data2 = destination2.receivedData[0]
+
+        assertEquals(
+            "Frame timestamps should match",
+            data1.frameTimestampNs,
+            data2.frameTimestampNs
+        )
+        assertEquals(
+            "Frame sequences should match",
+            data1.frameSequence,
+            data2.frameSequence
+        )
+
+        dataManager.stopSession()
+    }
+
     /**
      * Mock data destination for testing.
      */
