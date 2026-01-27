@@ -85,6 +85,9 @@ dependencies {
     // WebRTC
     implementation("io.getstream:stream-webrtc-android:1.1.1")
 
+    // OpenCV
+    implementation("org.opencv:opencv:4.9.0")
+
     // Network
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
