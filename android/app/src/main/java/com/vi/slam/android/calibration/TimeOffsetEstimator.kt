@@ -230,6 +230,7 @@ class TimeOffsetEstimator(
     /**
      * Convert motion data to timestamp-value pairs
      */
+    @JvmName("resampleCameraSignal")
     private fun resampleSignal(
         cameraMotions: List<CameraMotion>,
         startTime: Long,
@@ -243,6 +244,7 @@ class TimeOffsetEstimator(
     /**
      * Convert IMU motion data to timestamp-value pairs
      */
+    @JvmName("resampleImuSignal")
     private fun resampleSignal(
         imuMotions: List<ImuMotion>,
         startTime: Long,
