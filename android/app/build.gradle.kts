@@ -85,8 +85,8 @@ dependencies {
     // WebRTC
     implementation("io.getstream:stream-webrtc-android:1.1.1")
 
-    // OpenCV Android SDK
-    implementation("com.github.QuickBirdEng:opencv-android:4.5.3.0")
+    // OpenCV Android SDK (Official Maven Central)
+    implementation("org.opencv:opencv:4.12.0")
 
     // Network
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
