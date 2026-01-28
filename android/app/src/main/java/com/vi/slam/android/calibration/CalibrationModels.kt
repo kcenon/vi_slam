@@ -240,3 +240,47 @@ data class ExtrinsicCalibResult(
         return result
     }
 }
+
+/**
+ * Calibration quality level
+ */
+enum class CalibrationQuality {
+    EXCELLENT,   // Score >= 90
+    GOOD,        // Score >= 75
+    ACCEPTABLE,  // Score >= 60
+    POOR         // Score < 60
+}
+
+/**
+ * Statistics for reprojection errors
+ */
+data class ReprojectionErrorStats(
+    val mean: Double,           // Mean error across all points
+    val stdDev: Double,         // Standard deviation
+    val min: Double,            // Minimum error
+    val max: Double,            // Maximum error
+    val rms: Double,            // Root mean square error
+    val median: Double,         // Median error
+    val percentile95: Double    // 95th percentile error
+)
+
+/**
+ * Outlier detection result
+ */
+data class OutlierInfo(
+    val captureIndex: Int,      // Index of the capture
+    val errorValue: Double,     // Reprojection error value
+    val zScore: Double          // Z-score for outlier detection
+)
+
+/**
+ * Result of calibration verification
+ */
+data class CalibrationVerificationResult(
+    val qualityScore: Double,              // Overall quality score (0-100)
+    val quality: CalibrationQuality,       // Quality level classification
+    val reprojectionStats: ReprojectionErrorStats, // Detailed error statistics
+    val outliers: List<OutlierInfo>,       // Detected outlier captures
+    val meetsQualityThreshold: Boolean,    // Whether calibration meets minimum quality
+    val recommendations: List<String>      // Recommendations for improvement
+)
