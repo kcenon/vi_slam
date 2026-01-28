@@ -202,3 +202,41 @@ data class ExtrinsicCalibData(
     val imuSampleCount: Int,
     val intrinsicParams: IntrinsicCalibResult
 )
+
+/**
+ * Result of camera-IMU extrinsic calibration
+ *
+ * Contains the 6-DOF transformation (rotation and translation)
+ * from IMU coordinate frame to camera coordinate frame.
+ */
+data class ExtrinsicCalibResult(
+    val rotationMatrix: Array<DoubleArray>, // 3x3 rotation matrix (R_cam_imu)
+    val translation: DoubleArray,           // 3x1 translation vector (t_cam_imu) in meters
+    val reprojectionError: Double,          // RMS reprojection error in pixels
+    val frameCount: Int,                    // Number of frames used for calibration
+    val timestamp: Long                     // Calibration timestamp
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ExtrinsicCalibResult
+
+        if (!rotationMatrix.contentDeepEquals(other.rotationMatrix)) return false
+        if (!translation.contentEquals(other.translation)) return false
+        if (reprojectionError != other.reprojectionError) return false
+        if (frameCount != other.frameCount) return false
+        if (timestamp != other.timestamp) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = rotationMatrix.contentDeepHashCode()
+        result = 31 * result + translation.contentHashCode()
+        result = 31 * result + reprojectionError.hashCode()
+        result = 31 * result + frameCount
+        result = 31 * result + timestamp.hashCode()
+        return result
+    }
+}
