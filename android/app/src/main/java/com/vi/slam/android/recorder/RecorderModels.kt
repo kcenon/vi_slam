@@ -187,3 +187,57 @@ enum class RecorderState {
      */
     ERROR
 }
+
+/**
+ * Information about a recoverable recording session.
+ *
+ * Represents a recording session that was interrupted and can be recovered.
+ *
+ * @property recordingId Unique identifier for this recording session
+ * @property startTime Recording start time in milliseconds
+ * @property outputPath Full path to the recording output directory
+ * @property estimatedFrameCount Estimated number of frames (based on last state update)
+ * @property estimatedImuCount Estimated number of IMU samples (based on last state update)
+ * @property lastUpdateTime Timestamp of the last state update in milliseconds
+ */
+data class RecoverableSession(
+    val recordingId: String,
+    val startTime: Long,
+    val outputPath: String,
+    val estimatedFrameCount: Long,
+    val estimatedImuCount: Long,
+    val lastUpdateTime: Long
+)
+
+/**
+ * Result of a session recovery operation.
+ *
+ * Contains information about recovered data and any issues encountered.
+ *
+ * @property recordingId Unique identifier for the recovered recording session
+ * @property success True if recovery completed successfully
+ * @property recoveredFrameCount Number of frames recovered from video file
+ * @property recoveredImuCount Number of IMU samples recovered from CSV
+ * @property videoRecovered True if video file was successfully recovered
+ * @property imuRecovered True if IMU data was successfully recovered
+ * @property metadataGenerated True if metadata was successfully generated
+ * @property outputFiles List of recovered output files
+ * @property videoFile Path to the recovered video file (null if recovery failed)
+ * @property imuFile Path to the recovered IMU file (null if recovery failed)
+ * @property metadataFile Path to the generated metadata file (null if not generated)
+ * @property errorMessage Error description if success is false, null otherwise
+ */
+data class RecoveryResult(
+    val recordingId: String,
+    val success: Boolean,
+    val recoveredFrameCount: Long,
+    val recoveredImuCount: Long,
+    val videoRecovered: Boolean,
+    val imuRecovered: Boolean,
+    val metadataGenerated: Boolean,
+    val outputFiles: List<String>,
+    val videoFile: String? = null,
+    val imuFile: String? = null,
+    val metadataFile: String? = null,
+    val errorMessage: String? = null
+)
