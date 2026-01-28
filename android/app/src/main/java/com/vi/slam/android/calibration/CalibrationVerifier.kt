@@ -173,7 +173,7 @@ class CalibrationVerifier {
                 }
 
                 // Project points back to image
-                val projectedPoints = Mat()
+                val projectedPoints = MatOfPoint2f()
                 when (calibResult.cameraModel) {
                     CameraModelType.PINHOLE -> {
                         Calib3d.projectPoints(
@@ -192,7 +192,7 @@ class CalibrationVerifier {
                             rvec,
                             tvec,
                             cameraMatrix,
-                            distCoeffs
+                            MatOfDouble(distCoeffs)
                         )
                     }
                 }
