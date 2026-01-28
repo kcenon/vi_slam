@@ -1,5 +1,6 @@
 package com.vi.slam.android.recorder
 
+import android.content.Context
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
@@ -10,8 +11,10 @@ import com.google.gson.GsonBuilder
 import com.vi.slam.android.sensor.IMUSample
 import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
+import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
+import java.io.FileReader
 import java.io.FileWriter
 import java.nio.ByteBuffer
 import java.util.UUID
@@ -39,7 +42,8 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * Usage Example:
  * ```kotlin
- * val recorder = LocalRecorder()
+ * val context = applicationContext
+ * val recorder = LocalRecorder(context)
  * val config = RecorderConfig(
  *     outputDirectory = File("/path/to/output"),
  *     maxDurationMs = 60 * 60 * 1000
@@ -55,8 +59,10 @@ import java.util.concurrent.atomic.AtomicReference
  *     }
  * }
  * ```
+ *
+ * @param context Android application context (required for SharedPreferences)
  */
-class LocalRecorder : IRecorder {
+class LocalRecorder(private val context: Context) : IRecorder {
 
     companion object {
         private const val TAG = "LocalRecorder"
@@ -68,7 +74,11 @@ class LocalRecorder : IRecorder {
         private const val VIDEO_MIME_TYPE = "video/avc"  // H.264
         private const val VIDEO_IFRAME_INTERVAL = 1  // I-frame interval in seconds
         private const val TIMEOUT_USEC = 10000L  // 10ms timeout for codec
+        private const val STATE_UPDATE_INTERVAL = 100  // Update session state every N frames
     }
+
+    // Session state manager for recovery support
+    private val sessionStateManager = SessionStateManager(context)
 
     // Current recorder state (thread-safe atomic reference)
     private val state = AtomicReference<RecorderState>(RecorderState.UNINITIALIZED)
@@ -217,6 +227,15 @@ class LocalRecorder : IRecorder {
                     // Reset statistics
                     frameCount.set(0)
                     imuSampleCount.set(0)
+
+                    // Save initial session state for recovery
+                    sessionStateManager.saveSessionState(
+                        recordingId = recordingId,
+                        startTime = recordingStartTime,
+                        outputPath = sessionDir.absolutePath,
+                        frameCount = 0,
+                        imuCount = 0
+                    )
 
                     // Initialize IMU CSV writer
                     try {
@@ -461,6 +480,9 @@ class LocalRecorder : IRecorder {
                         errorMessage = null
                     )
 
+                    // Clear session state (recording completed successfully)
+                    sessionStateManager.removeSessionState(recording.recordingId)
+
                     // Clean up session state
                     currentRecording = null
                     sessionDirectory = null
@@ -525,9 +547,19 @@ class LocalRecorder : IRecorder {
                 Log.w(TAG, "IMU CSV writer is null, skipping IMU data write")
             }
 
-            // Log periodically for debugging (every 100 frames)
+            // Update session state periodically (every 100 frames)
             val currentFrameCount = frameCount.get()
-            if (currentFrameCount % 100 == 0L) {
+            if (currentFrameCount % STATE_UPDATE_INTERVAL == 0L) {
+                currentRecording?.let { recording ->
+                    sessionStateManager.saveSessionState(
+                        recordingId = recording.recordingId,
+                        startTime = recordingStartTime,
+                        outputPath = recording.outputPath,
+                        frameCount = currentFrameCount,
+                        imuCount = imuSampleCount.get()
+                    )
+                }
+
                 Log.d(
                     TAG,
                     "Recording progress: $currentFrameCount frames, " +
@@ -841,5 +873,224 @@ class LocalRecorder : IRecorder {
         metadataFile.writeText(jsonString)
 
         return metadataFile.absolutePath
+    }
+
+    override fun listRecoverableSessions(): List<RecoverableSession> {
+        return try {
+            val incompleteSessions = sessionStateManager.listIncompleteSession()
+
+            // Filter sessions that still have output directories
+            incompleteSessions.filter { session ->
+                val sessionDir = File(session.outputPath)
+                sessionDir.exists() && sessionDir.isDirectory
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to list recoverable sessions", e)
+            emptyList()
+        }
+    }
+
+    override fun recoverSession(sessionId: String): Result<RecoveryResult> {
+        return try {
+            Log.d(TAG, "Attempting to recover session: $sessionId")
+
+            // Get session state
+            val sessionState = sessionStateManager.getSessionState(sessionId)
+                ?: return Result.failure(
+                    IllegalArgumentException("Session not found: $sessionId")
+                )
+
+            val sessionDir = File(sessionState.outputPath)
+            if (!sessionDir.exists() || !sessionDir.isDirectory) {
+                return Result.failure(
+                    IllegalStateException("Session directory not found: ${sessionState.outputPath}")
+                )
+            }
+
+            // Recover IMU CSV data
+            val imuFile = File(sessionDir, IMU_CSV_FILENAME)
+            val imuRecovered: Boolean
+            val recoveredImuCount: Long
+
+            if (imuFile.exists()) {
+                Log.d(TAG, "Recovering IMU CSV: ${imuFile.absolutePath}")
+                val csvResult = CsvRecovery.validateAndRepair(imuFile)
+
+                imuRecovered = csvResult.success
+                recoveredImuCount = csvResult.validLines - 1  // Subtract header line
+
+                if (csvResult.success) {
+                    Log.i(TAG, "IMU CSV recovery successful: $recoveredImuCount samples")
+                } else {
+                    Log.w(TAG, "IMU CSV recovery failed: ${csvResult.errorMessage}")
+                }
+            } else {
+                Log.w(TAG, "IMU CSV file not found, skipping recovery")
+                imuRecovered = false
+                recoveredImuCount = 0
+            }
+
+            // Recover MP4 video
+            val videoFile = File(sessionDir, VIDEO_FILENAME)
+            val videoRecovered: Boolean
+            val recoveredFrameCount: Long
+            val recoveredDurationMs: Long
+
+            if (videoFile.exists()) {
+                Log.d(TAG, "Recovering MP4 video: ${videoFile.absolutePath}")
+                val mp4Result = Mp4Recovery.recoverMp4(videoFile)
+
+                videoRecovered = mp4Result.playable
+                recoveredFrameCount = mp4Result.estimatedFrameCount
+                recoveredDurationMs = mp4Result.durationMs
+
+                if (mp4Result.playable) {
+                    Log.i(TAG, "MP4 video is playable: $recoveredFrameCount frames, ${recoveredDurationMs}ms")
+                } else {
+                    Log.w(TAG, "MP4 video is not playable: ${mp4Result.errorMessage}")
+                }
+            } else {
+                Log.w(TAG, "MP4 video file not found, skipping recovery")
+                videoRecovered = false
+                recoveredFrameCount = 0
+                recoveredDurationMs = 0
+            }
+
+            // Generate recovery metadata
+            val metadataFile = generateRecoveryMetadata(
+                sessionDir = sessionDir,
+                recordingId = sessionId,
+                startTime = sessionState.startTime,
+                estimatedDurationMs = System.currentTimeMillis() - sessionState.startTime,
+                recoveredFrameCount = recoveredFrameCount,
+                recoveredImuCount = recoveredImuCount,
+                videoRecovered = videoRecovered,
+                imuRecovered = imuRecovered,
+                recoveryTimestamp = System.currentTimeMillis()
+            )
+
+            // Collect output files
+            val outputFiles = mutableListOf<String>()
+            if (videoRecovered && videoFile.exists()) {
+                outputFiles.add(videoFile.absolutePath)
+            }
+            if (imuRecovered && imuFile.exists()) {
+                outputFiles.add(imuFile.absolutePath)
+            }
+            if (metadataFile != null) {
+                outputFiles.add(metadataFile)
+            }
+
+            // Create recovery result
+            val result = RecoveryResult(
+                recordingId = sessionId,
+                success = imuRecovered || videoRecovered,
+                recoveredFrameCount = recoveredFrameCount,
+                recoveredImuCount = recoveredImuCount,
+                videoRecovered = videoRecovered,
+                imuRecovered = imuRecovered,
+                metadataGenerated = metadataFile != null,
+                outputFiles = outputFiles,
+                videoFile = if (videoRecovered) videoFile.absolutePath else null,
+                imuFile = if (imuRecovered) imuFile.absolutePath else null,
+                metadataFile = metadataFile,
+                errorMessage = if (imuRecovered || videoRecovered) null else "No data could be recovered"
+            )
+
+            // Remove session state after successful recovery
+            if (result.success) {
+                sessionStateManager.removeSessionState(sessionId)
+                Log.i(TAG, "Session recovery completed: $sessionId")
+            } else {
+                Log.w(TAG, "Session recovery failed: $sessionId")
+            }
+
+            Result.success(result)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to recover session: $sessionId", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Generate metadata.json file for a recovered recording session.
+     *
+     * Similar to generateMetadata() but includes recovery-specific information:
+     * - Recovery timestamp
+     * - Recovery status for video and IMU
+     * - Estimated vs recovered counts
+     * - Recovery warnings
+     *
+     * @param sessionDir Session output directory
+     * @param recordingId Unique recording identifier
+     * @param startTime Recording start timestamp in milliseconds
+     * @param estimatedDurationMs Estimated recording duration (from interrupted time)
+     * @param recoveredFrameCount Number of frames recovered
+     * @param recoveredImuCount Number of IMU samples recovered
+     * @param videoRecovered Whether video was successfully recovered
+     * @param imuRecovered Whether IMU data was successfully recovered
+     * @param recoveryTimestamp Timestamp of recovery operation
+     * @return Absolute path to generated metadata.json file, or null on failure
+     */
+    private fun generateRecoveryMetadata(
+        sessionDir: File,
+        recordingId: String,
+        startTime: Long,
+        estimatedDurationMs: Long,
+        recoveredFrameCount: Long,
+        recoveredImuCount: Long,
+        videoRecovered: Boolean,
+        imuRecovered: Boolean,
+        recoveryTimestamp: Long
+    ): String? {
+        return try {
+            val metadataFile = File(sessionDir, METADATA_FILENAME)
+
+            // Build metadata structure with recovery info
+            val metadata = mapOf(
+                "recording_id" to recordingId,
+                "start_time" to startTime,
+                "estimated_duration_ms" to estimatedDurationMs,
+                "recovered_frame_count" to recoveredFrameCount,
+                "recovered_imu_count" to recoveredImuCount,
+                "recovered" to true,
+                "recovery_timestamp" to recoveryTimestamp,
+                "recovery_status" to mapOf(
+                    "video_recovered" to videoRecovered,
+                    "imu_recovered" to imuRecovered
+                ),
+                "device" to mapOf(
+                    "manufacturer" to Build.MANUFACTURER,
+                    "model" to Build.MODEL,
+                    "android_version" to Build.VERSION.RELEASE,
+                    "sdk_int" to Build.VERSION.SDK_INT
+                ),
+                "output_files" to mapOf(
+                    "video" to if (videoRecovered) VIDEO_FILENAME else "N/A (recovery failed)",
+                    "imu" to if (imuRecovered) IMU_CSV_FILENAME else "N/A (recovery failed)",
+                    "metadata" to METADATA_FILENAME
+                ),
+                "warnings" to buildList {
+                    if (!videoRecovered) {
+                        add("Video file could not be recovered or is corrupt")
+                    }
+                    if (!imuRecovered) {
+                        add("IMU CSV data could not be recovered or is corrupt")
+                    }
+                }
+            )
+
+            // Write JSON to file
+            val gson = GsonBuilder().setPrettyPrinting().create()
+            val jsonString = gson.toJson(metadata)
+
+            metadataFile.writeText(jsonString)
+
+            Log.d(TAG, "Recovery metadata generated: ${metadataFile.absolutePath}")
+            metadataFile.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to generate recovery metadata", e)
+            null
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.vi.slam.android.recorder
 
+import android.content.Context
 import com.vi.slam.android.sensor.IMUSample
 import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
@@ -8,12 +9,19 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.junit.MockitoJUnitRunner
 import java.io.File
 
+@RunWith(MockitoJUnitRunner::class)
 class LocalRecorderTest {
 
     @get:Rule
     val tempFolder = TemporaryFolder()
+
+    @Mock
+    private lateinit var mockContext: Context
 
     private lateinit var recorder: LocalRecorder
     private lateinit var outputDir: File
@@ -29,7 +37,7 @@ class LocalRecorderTest {
             videoHeight = 480,
             videoFps = 30
         )
-        recorder = LocalRecorder()
+        recorder = LocalRecorder(mockContext)
     }
 
     // ========== Initialization Tests ==========

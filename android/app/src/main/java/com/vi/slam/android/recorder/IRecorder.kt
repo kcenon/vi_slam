@@ -118,4 +118,37 @@ interface IRecorder : IDataDestination {
      * @return True if recorder can accept data, false otherwise
      */
     override fun isEnabled(): Boolean
+
+    /**
+     * List all recoverable recording sessions.
+     *
+     * Scans for incomplete recording sessions from previous runs that can be recovered.
+     * A session is considered recoverable if:
+     * - State tracking data exists
+     * - Recording was not properly stopped
+     * - Output files are present in the session directory
+     *
+     * @return List of recoverable sessions (empty if none found)
+     */
+    fun listRecoverableSessions(): List<RecoverableSession>
+
+    /**
+     * Recover an interrupted recording session.
+     *
+     * Attempts to salvage data from a recording session that was interrupted due to:
+     * - App crashes
+     * - System kills (low memory)
+     * - Unexpected device shutdown
+     * - Force stop by user
+     *
+     * Recovery operations:
+     * - Validate and repair IMU CSV data
+     * - Attempt to finalize MP4 video file (or extract raw frames)
+     * - Generate metadata with recovery info
+     *
+     * @param sessionId Recording ID of the session to recover
+     * @return RecoveryResult with recovery statistics and output files,
+     *         or failure if recovery is not possible
+     */
+    fun recoverSession(sessionId: String): Result<RecoveryResult>
 }
