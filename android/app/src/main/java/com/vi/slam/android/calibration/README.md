@@ -11,10 +11,18 @@ This module implements camera intrinsic and camera-IMU extrinsic calibration for
   - Reprojection error < 0.5 pixel
   - Coverage-based capture guidance (3x3 grid)
 
+- **Calibration Verification (CMP-011.5)**
+  - Reprojection error statistics (mean, stdDev, RMS, median, percentiles)
+  - Quality scoring (0-100) based on multiple factors
+  - Outlier detection using Z-score analysis
+  - Quality classification (Excellent, Good, Acceptable, Poor)
+  - Automated recommendations for improvement
+
 - **Calibration Data Models**
   - `IntrinsicCalibResult`: Camera intrinsic parameters
   - `CalibrationCapture`: Single calibration frame
   - `CoverageMap`: Calibration progress tracking
+  - `CalibrationVerificationResult`: Verification metrics and quality assessment
 
 ## Dependencies
 
@@ -99,6 +107,48 @@ when (calibrator.getCoverageMap().coveredRegions >= 9) {
 }
 ```
 
+### Calibration Verification
+
+```kotlin
+val verifier = CalibrationVerifier()
+
+// Verify calibration quality
+val verificationResult = verifier.verifyIntrinsicCalibration(
+    calibResult = params,
+    objectPoints = objectPointsList,
+    imagePoints = imagePointsList,
+    imageSize = Size(640.0, 480.0)
+)
+
+if (verificationResult.isSuccess) {
+    val verification = verificationResult.getOrNull()
+
+    println("Quality Score: ${verification?.qualityScore}/100")
+    println("Quality Level: ${verification?.quality}")
+    println("Meets Threshold: ${verification?.meetsQualityThreshold}")
+
+    // Show detailed statistics
+    val stats = verification?.reprojectionStats
+    println("Mean Error: ${stats?.mean} px")
+    println("Std Dev: ${stats?.stdDev} px")
+    println("RMS: ${stats?.rms} px")
+
+    // Check for outliers
+    if (verification?.outliers?.isNotEmpty() == true) {
+        println("Outliers detected: ${verification.outliers.size}")
+        verification.outliers.forEach { outlier ->
+            println("  Capture ${outlier.captureIndex}: ${outlier.errorValue} px (Z-score: ${outlier.zScore})")
+        }
+    }
+
+    // Show recommendations
+    println("\nRecommendations:")
+    verification?.recommendations?.forEach { recommendation ->
+        println("  - $recommendation")
+    }
+}
+```
+
 ## Implementation Details
 
 ### Checkerboard Detection
@@ -144,15 +194,56 @@ cd android
 
 **Note**: Tests requiring OpenCV will be skipped if OpenCV is not available in the test environment.
 
+## Calibration Verification Details
+
+### Quality Scoring Algorithm
+
+The quality score (0-100) is calculated using four weighted factors:
+
+1. **Mean Reprojection Error (40%)**
+   - Excellent: ≤ 0.3 pixels
+   - Good: ≤ 0.5 pixels
+   - Acceptable: ≤ 1.0 pixels
+   - Poor: > 1.0 pixels
+
+2. **Error Consistency (30%)**
+   - Measured by standard deviation
+   - Lower variance indicates more reliable calibration
+
+3. **Outlier Count (20%)**
+   - Detected using Z-score threshold (|Z| > 2.5)
+   - Fewer outliers indicate better data quality
+
+4. **Capture Count (10%)**
+   - More captures improve reliability
+   - Recommended: ≥ 20 captures
+
+### Quality Classifications
+
+| Quality | Score Range | Criteria |
+|---------|-------------|----------|
+| EXCELLENT | 90-100 | Mean error ≤ 0.3px, consistent, no outliers |
+| GOOD | 75-89 | Mean error ≤ 0.5px, mostly consistent |
+| ACCEPTABLE | 60-74 | Mean error ≤ 1.0px, acceptable for use |
+| POOR | 0-59 | Mean error > 1.0px, needs recalibration |
+
+### Outlier Detection
+
+Uses Z-score method to identify problematic captures:
+- Z-score = (error - mean) / stdDev
+- Outliers: |Z-score| > 2.5
+- Recommendation: Remove outliers and recalibrate
+
 ## Future Work
 
-- [ ] Extrinsic calibration implementation (#88)
-- [ ] Time offset estimation (#89)
-- [ ] Calibration export (YAML/JSON) (#90)
-- [ ] Calibration verification (#91)
+- [x] Camera intrinsic calibration (#87)
+- [x] Camera-IMU extrinsic calibration data collection (#88)
+- [x] Time offset estimation (#89)
+- [x] Calibration export (YAML/JSON) (#90)
+- [x] Calibration verification (#91)
 - [ ] AprilGrid target support
 - [ ] Real-time corner detection visualization
-- [ ] Calibration quality scoring
+- [ ] Online calibration refinement
 
 ## References
 
@@ -163,5 +254,8 @@ cd android
 ## Related Issues
 
 - Epic: #22 - Calibration Module
-- This implementation: #87 - Camera Intrinsic Calibration
-- Next: #88 - Camera-IMU Extrinsic Calibration
+- #87 - Camera Intrinsic Calibration (CMP-011.1)
+- #88 - Camera-IMU Extrinsic Calibration Data Collection (CMP-011.2)
+- #89 - Time Offset Estimation (CMP-011.3)
+- #90 - Calibration Export Module (CMP-011.4)
+- #91 - Calibration Verification (CMP-011.5)
