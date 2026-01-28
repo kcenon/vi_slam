@@ -151,10 +151,10 @@ class CalibrationVerifier {
                 when (calibResult.cameraModel) {
                     CameraModelType.PINHOLE -> {
                         Calib3d.solvePnP(
-                            objectPoints[i],
-                            imagePoints[i],
+                            MatOfPoint3f(objectPoints[i]),
+                            MatOfPoint2f(imagePoints[i]),
                             cameraMatrix,
-                            distCoeffs,
+                            MatOfDouble(distCoeffs),
                             rvec,
                             tvec
                         )
@@ -162,10 +162,10 @@ class CalibrationVerifier {
                     CameraModelType.FISHEYE -> {
                         // For fisheye, use regular PnP as approximation
                         Calib3d.solvePnP(
-                            objectPoints[i],
-                            imagePoints[i],
+                            MatOfPoint3f(objectPoints[i]),
+                            MatOfPoint2f(imagePoints[i]),
                             cameraMatrix,
-                            distCoeffs,
+                            MatOfDouble(distCoeffs),
                             rvec,
                             tvec
                         )
@@ -177,17 +177,17 @@ class CalibrationVerifier {
                 when (calibResult.cameraModel) {
                     CameraModelType.PINHOLE -> {
                         Calib3d.projectPoints(
-                            objectPoints[i],
+                            MatOfPoint3f(objectPoints[i]),
                             rvec,
                             tvec,
                             cameraMatrix,
-                            distCoeffs,
+                            MatOfDouble(distCoeffs),
                             projectedPoints
                         )
                     }
                     CameraModelType.FISHEYE -> {
                         Calib3d.fisheye_projectPoints(
-                            objectPoints[i],
+                            MatOfPoint3f(objectPoints[i]),
                             projectedPoints,
                             rvec,
                             tvec,
