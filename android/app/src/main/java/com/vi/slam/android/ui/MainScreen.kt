@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
  * @param viewModel ViewModel managing the main screen state
  * @param onSettingsClick Callback when settings button is clicked
  * @param onCalibrationClick Callback when calibration button is clicked
+ * @param onHistoryClick Callback when history button is clicked
  * @param modifier Modifier for the screen container
  */
 @Composable
@@ -23,6 +24,7 @@ fun MainScreen(
     viewModel: MainViewModel = viewModel(),
     onSettingsClick: () -> Unit = {},
     onCalibrationClick: () -> Unit = {},
+    onHistoryClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -56,6 +58,7 @@ fun MainScreen(
                     onStreamClick = { viewModel.toggleStreaming() },
                     onSettingsClick = onSettingsClick,
                     onCalibrationClick = onCalibrationClick,
+                    onHistoryClick = onHistoryClick,
                     modifier = Modifier.fillMaxSize()
                 )
             }

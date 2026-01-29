@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
  * @param onStreamClick Callback when stream button is clicked
  * @param onSettingsClick Callback when settings button is clicked
  * @param onCalibrationClick Callback when calibration button is clicked
+ * @param onHistoryClick Callback when history button is clicked
  * @param modifier Modifier for the button container
  */
 @Composable
@@ -32,6 +33,7 @@ fun ControlButtons(
     onStreamClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onCalibrationClick: () -> Unit,
+    onHistoryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -40,12 +42,23 @@ fun ControlButtons(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Top row: Settings and Calibration buttons
+        // Top row: Settings, Calibration, and History buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // History button
+            IconButton(onClick = onHistoryClick) {
+                Icon(
+                    imageVector = Icons.Default.List,
+                    contentDescription = "History",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             // Calibration button
             IconButton(onClick = onCalibrationClick) {
                 Icon(
