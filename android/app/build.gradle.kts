@@ -99,6 +99,9 @@ dependencies {
     // YAML serialization for calibration export
     implementation("org.yaml:snakeyaml:2.2")
 
+    // DataStore for settings persistence
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
