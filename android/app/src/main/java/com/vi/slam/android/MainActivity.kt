@@ -1,5 +1,6 @@
 package com.vi.slam.android
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,19 +20,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             VISLAMTheme {
-                VISLAMApp()
+                VISLAMApp(context = applicationContext)
             }
         }
     }
 }
 
 @Composable
-fun VISLAMApp() {
+fun VISLAMApp(context: Context) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Main) }
 
     when (currentScreen) {
         Screen.Main -> {
             MainScreen(
+                context = context,
                 onSettingsClick = {
                     currentScreen = Screen.Settings
                 },

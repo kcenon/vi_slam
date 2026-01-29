@@ -1,5 +1,6 @@
 package com.vi.slam.android.ui
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -8,11 +9,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 
 /**
  * Main screen of the VI-SLAM application.
  * Shows camera preview, control buttons, and status information.
  *
+ * @param context Application context for ViewModel initialization
  * @param viewModel ViewModel managing the main screen state
  * @param onSettingsClick Callback when settings button is clicked
  * @param onCalibrationClick Callback when calibration button is clicked
@@ -21,7 +26,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
  */
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = viewModel(),
+    context: Context,
+    viewModel: MainViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                MainViewModel(context)
+            }
+        }
+    ),
     onSettingsClick: () -> Unit = {},
     onCalibrationClick: () -> Unit = {},
     onHistoryClick: () -> Unit = {},
