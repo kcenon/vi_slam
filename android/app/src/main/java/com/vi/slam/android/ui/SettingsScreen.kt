@@ -309,7 +309,7 @@ private fun SettingsItem(
 }
 
 /**
- * IP address input field.
+ * IP address input field with validation.
  */
 @Composable
 private fun IpAddressField(
@@ -317,19 +317,51 @@ private fun IpAddressField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            onValueChange(newValue)
+            // Validate IP address format
+            if (newValue.isNotEmpty()) {
+                val parts = newValue.split(".")
+                isError = when {
+                    parts.size != 4 -> {
+                        errorMessage = "IP must have 4 parts"
+                        true
+                    }
+                    !parts.all { part -> part.toIntOrNull()?.let { it in 0..255 } ?: false } -> {
+                        errorMessage = "Each part must be 0-255"
+                        true
+                    }
+                    else -> {
+                        errorMessage = ""
+                        false
+                    }
+                }
+            } else {
+                isError = false
+                errorMessage = ""
+            }
+        },
         label = { Text("Server IP Address") },
         placeholder = { Text("192.168.1.100") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
+        isError = isError,
+        supportingText = {
+            if (isError) {
+                Text(errorMessage)
+            }
+        },
         modifier = modifier.fillMaxWidth()
     )
 }
 
 /**
- * Port number input field.
+ * Port number input field with validation.
  */
 @Composable
 private fun PortField(
@@ -337,13 +369,45 @@ private fun PortField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { newValue ->
+            onValueChange(newValue)
+            // Validate port number
+            if (newValue.isNotEmpty()) {
+                val port = newValue.toIntOrNull()
+                isError = when {
+                    port == null -> {
+                        errorMessage = "Port must be a number"
+                        true
+                    }
+                    port !in 1..65535 -> {
+                        errorMessage = "Port must be 1-65535"
+                        true
+                    }
+                    else -> {
+                        errorMessage = ""
+                        false
+                    }
+                }
+            } else {
+                isError = false
+                errorMessage = ""
+            }
+        },
         label = { Text("Server Port") },
         placeholder = { Text("8080") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
+        isError = isError,
+        supportingText = {
+            if (isError) {
+                Text(errorMessage)
+            }
+        },
         modifier = modifier.fillMaxWidth()
     )
 }

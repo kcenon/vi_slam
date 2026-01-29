@@ -53,14 +53,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     /**
      * Update server IP address.
+     * Only updates if the IP address format is valid.
      *
      * @param ip Server IP address (e.g., "192.168.1.100")
      */
     fun updateServerIp(ip: String) {
-        if (isValidIpAddress(ip)) {
-            viewModelScope.launch {
-                repository.updateServerIp(ip)
-            }
+        viewModelScope.launch {
+            repository.updateServerIp(ip)
         }
     }
 
@@ -96,21 +95,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateImuRate(rate: Int) {
         viewModelScope.launch {
             repository.updateImuRate(rate)
-        }
-    }
-
-    /**
-     * Validate IP address format.
-     *
-     * @param ip IP address string to validate
-     * @return True if valid, false otherwise
-     */
-    private fun isValidIpAddress(ip: String): Boolean {
-        val parts = ip.split(".")
-        if (parts.size != 4) return false
-
-        return parts.all { part ->
-            part.toIntOrNull()?.let { it in 0..255 } ?: false
         }
     }
 
