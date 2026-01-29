@@ -159,7 +159,7 @@ class MainViewModel(
                 Log.e(TAG, "Exception during recording stop", e)
                 _uiState.value = _uiState.value.copy(
                     isRecording = false,
-                    recordingError = "Error: ${error.message}"
+                    recordingError = "Error: ${e.message}"
                 )
             }
         }
