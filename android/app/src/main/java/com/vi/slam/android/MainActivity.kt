@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.vi.slam.android.ui.CalibrationScreen
 import com.vi.slam.android.ui.HistoryScreen
 import com.vi.slam.android.ui.MainScreen
 import com.vi.slam.android.ui.SettingsScreen
@@ -35,7 +36,7 @@ fun VISLAMApp() {
                     currentScreen = Screen.Settings
                 },
                 onCalibrationClick = {
-                    // TODO: Navigate to Calibration screen
+                    currentScreen = Screen.Calibration
                 },
                 onHistoryClick = {
                     currentScreen = Screen.History
@@ -56,6 +57,13 @@ fun VISLAMApp() {
                 }
             )
         }
+        Screen.Calibration -> {
+            CalibrationScreen(
+                onBackClick = {
+                    currentScreen = Screen.Main
+                }
+            )
+        }
     }
 }
 
@@ -63,6 +71,7 @@ sealed class Screen {
     data object Main : Screen()
     data object Settings : Screen()
     data object History : Screen()
+    data object Calibration : Screen()
 }
 
 @Composable
