@@ -27,7 +27,7 @@ import java.io.File
  */
 class MainViewModel(
     private val context: Context,
-    private val recorder: IRecorder = LocalRecorder()
+    private val recorder: IRecorder = LocalRecorder(context)
 ) : ViewModel() {
 
     companion object {
