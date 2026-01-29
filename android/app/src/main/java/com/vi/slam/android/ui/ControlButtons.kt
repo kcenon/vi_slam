@@ -107,12 +107,17 @@ private fun RecordButton(
         contentColor = Color.White
     ) {
         if (isRecording) {
-            // Stop icon: Square
-            Icon(
-                imageVector = Icons.Default.Square,
-                contentDescription = "Stop Recording",
-                modifier = Modifier.size(36.dp)
-            )
+            // Stop icon: Square (using Canvas)
+            Canvas(modifier = Modifier.size(36.dp)) {
+                drawRect(
+                    color = Color.White,
+                    topLeft = Offset(size.width * 0.25f, size.height * 0.25f),
+                    size = androidx.compose.ui.geometry.Size(
+                        size.width * 0.5f,
+                        size.height * 0.5f
+                    )
+                )
+            }
         } else {
             // Record icon: Circle (using Canvas)
             Canvas(modifier = Modifier.size(36.dp)) {
@@ -143,7 +148,7 @@ private fun StreamButton(
         contentColor = Color.White
     ) {
         Icon(
-            imageVector = if (isStreaming) Icons.Default.Square else Icons.Default.Wifi,
+            imageVector = if (isStreaming) Icons.Default.Close else Icons.Default.Send,
             contentDescription = if (isStreaming) "Stop Streaming" else "Start Streaming",
             modifier = Modifier.size(36.dp)
         )
