@@ -2,15 +2,15 @@ package com.vi.slam.android.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.geometry.Offset
 
 /**
  * Status bar showing camera FPS, IMU rate, connection status, and recording indicator.
@@ -122,12 +122,14 @@ private fun ConnectionIndicator(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.Circle,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(12.dp)
-        )
+        // Connection status indicator dot
+        Canvas(modifier = Modifier.size(12.dp)) {
+            drawCircle(
+                color = color,
+                radius = size.minDimension / 2,
+                center = Offset(size.width / 2, size.height / 2)
+            )
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
@@ -148,12 +150,14 @@ private fun RecordingIndicator(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.FiberManualRecord,
-            contentDescription = null,
-            tint = Color.Red,
-            modifier = Modifier.size(12.dp)
-        )
+        // Recording indicator dot
+        Canvas(modifier = Modifier.size(12.dp)) {
+            drawCircle(
+                color = Color.Red,
+                radius = size.minDimension / 2,
+                center = Offset(size.width / 2, size.height / 2)
+            )
+        }
         Text(
             text = "REC",
             style = MaterialTheme.typography.bodySmall,

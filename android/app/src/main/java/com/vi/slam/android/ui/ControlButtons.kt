@@ -10,6 +10,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 
 /**
  * Control buttons for recording and streaming.
@@ -104,11 +106,23 @@ private fun RecordButton(
         containerColor = if (isRecording) Color.Red else MaterialTheme.colorScheme.error,
         contentColor = Color.White
     ) {
-        Icon(
-            imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
-            contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
-            modifier = Modifier.size(36.dp)
-        )
+        if (isRecording) {
+            // Stop icon: Square
+            Icon(
+                imageVector = Icons.Default.Square,
+                contentDescription = "Stop Recording",
+                modifier = Modifier.size(36.dp)
+            )
+        } else {
+            // Record icon: Circle (using Canvas)
+            Canvas(modifier = Modifier.size(36.dp)) {
+                drawCircle(
+                    color = Color.White,
+                    radius = size.minDimension / 2,
+                    center = Offset(size.width / 2, size.height / 2)
+                )
+            }
+        }
     }
 }
 
@@ -129,7 +143,7 @@ private fun StreamButton(
         contentColor = Color.White
     ) {
         Icon(
-            imageVector = if (isStreaming) Icons.Default.Stop else Icons.Default.Cast,
+            imageVector = if (isStreaming) Icons.Default.Square else Icons.Default.Wifi,
             contentDescription = if (isStreaming) "Stop Streaming" else "Start Streaming",
             modifier = Modifier.size(36.dp)
         )
