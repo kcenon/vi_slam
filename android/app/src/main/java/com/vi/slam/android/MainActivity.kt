@@ -3,36 +3,26 @@ package com.vi.slam.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.vi.slam.android.ui.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             VISLAMTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("VI-SLAM")
-                }
+                MainScreen(
+                    onSettingsClick = {
+                        // TODO: Navigate to Settings screen
+                    },
+                    onCalibrationClick = {
+                        // TODO: Navigate to Calibration screen
+                    }
+                )
             }
         }
     }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
 }
 
 @Composable
@@ -40,12 +30,4 @@ fun VISLAMTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         content = content
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    VISLAMTheme {
-        Greeting("VI-SLAM")
-    }
 }
