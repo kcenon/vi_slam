@@ -50,6 +50,8 @@ jobs:
         HOMEBREW_NO_INSTALL_CLEANUP: 1
       run: |
         brew install --quiet cmake eigen opencv zeromq pkg-config
+        # Explicitly link packages (needed when restored from cache)
+        brew link --overwrite cmake eigen opencv zeromq pkg-config
 
     - name: Verify OpenCV installation (macOS)
       if: runner.os == 'macOS'
@@ -60,6 +62,12 @@ jobs:
         fi
         opencv_version=$(brew list --versions opencv | awk '{print $2}')
         echo "OpenCV version installed: $opencv_version"
+        # Verify CMake can find OpenCV
+        if ! pkg-config --exists opencv4; then
+          echo "Error: pkg-config cannot find opencv4"
+          exit 1
+        fi
+        echo "OpenCV is properly linked and detectable"
 
     - name: Configure CMake (PC Client)
       run: |
