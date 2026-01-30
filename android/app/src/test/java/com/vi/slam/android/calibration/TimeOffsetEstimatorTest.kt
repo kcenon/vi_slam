@@ -30,7 +30,7 @@ class TimeOffsetEstimatorTest {
             frequencyHz = 1.0
         )
 
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = knownOffsetNs, // IMU delayed by 50ms
             durationMs = 2000,
             frequencyHz = 1.0
@@ -64,7 +64,7 @@ class TimeOffsetEstimatorTest {
             frequencyHz = 1.0
         )
 
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = 0L, // No offset
             durationMs = 2000,
             frequencyHz = 1.0
@@ -95,7 +95,7 @@ class TimeOffsetEstimatorTest {
             frequencyHz = 1.0
         )
 
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = 0L,
             durationMs = 2000,
             frequencyHz = 1.0
@@ -120,7 +120,7 @@ class TimeOffsetEstimatorTest {
             frequencyHz = 1.0
         ).take(10) // Less than minimum required
 
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = 0L,
             durationMs = 2000,
             frequencyHz = 1.0
@@ -141,7 +141,7 @@ class TimeOffsetEstimatorTest {
             frequencyHz = 1.0
         )
 
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = 0L,
             durationMs = 100, // Too short
             frequencyHz = 1.0
@@ -164,7 +164,7 @@ class TimeOffsetEstimatorTest {
         )
 
         // IMU data from 2000-3000ms (no overlap)
-        val imuMotions = generateSyntheticMotion(
+        val imuMotions = generateSyntheticImuMotion(
             startTimeNs = 2_000_000_000L,
             durationMs = 1000,
             frequencyHz = 1.0
@@ -260,8 +260,9 @@ class TimeOffsetEstimatorTest {
     @Test
     fun testAccuracyClassification() {
         // Test with high accuracy data
-        val highAccuracyMotions = generateSyntheticMotion(0L, 3000, 2.0)
-        val result = estimator.estimateOffset(highAccuracyMotions, highAccuracyMotions)
+        val highAccuracyCameraMotions = generateSyntheticMotion(0L, 3000, 2.0)
+        val highAccuracyImuMotions = generateSyntheticImuMotion(0L, 3000, 2.0)
+        val result = estimator.estimateOffset(highAccuracyCameraMotions, highAccuracyImuMotions)
 
         assertTrue(result.isSuccess)
         val offset = result.getOrNull()
@@ -278,7 +279,7 @@ class TimeOffsetEstimatorTest {
         val largeOffsetNs = (largeOffsetMs * 1_000_000).toLong()
 
         val cameraMotions = generateSyntheticMotion(0L, 3000, 1.0)
-        val imuMotions = generateSyntheticMotion(largeOffsetNs, 3000, 1.0)
+        val imuMotions = generateSyntheticImuMotion(largeOffsetNs, 3000, 1.0)
 
         val result = estimator.estimateOffset(cameraMotions, imuMotions)
 
@@ -317,6 +318,39 @@ class TimeOffsetEstimatorTest {
                 TimeOffsetEstimator.CameraMotion(
                     timestamp = t,
                     motionMagnitude = magnitude
+                )
+            )
+        }
+
+        return samples
+    }
+
+    /**
+     * Generate synthetic IMU motion data with sinusoidal pattern
+     *
+     * @param startTimeNs Start time in nanoseconds
+     * @param durationMs Duration in milliseconds
+     * @param frequencyHz Motion frequency in Hz
+     * @return List of IMU motion samples
+     */
+    private fun generateSyntheticImuMotion(
+        startTimeNs: Long,
+        durationMs: Int,
+        frequencyHz: Double
+    ): List<TimeOffsetEstimator.ImuMotion> {
+        val samples = mutableListOf<TimeOffsetEstimator.ImuMotion>()
+        val samplingPeriodNs = 10_000_000L // 10ms = 100 Hz
+
+        val numSamples = (durationMs * 1_000_000 / samplingPeriodNs).toInt()
+
+        for (i in 0 until numSamples) {
+            val t = startTimeNs + i * samplingPeriodNs
+            val magnitude = generateMotionValue(t, frequencyHz)
+
+            samples.add(
+                TimeOffsetEstimator.ImuMotion(
+                    timestamp = t,
+                    accelMagnitude = magnitude
                 )
             )
         }
