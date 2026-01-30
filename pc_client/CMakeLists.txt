@@ -55,6 +55,7 @@ if(glfw3_FOUND)
         src/visualizer/renderer.cpp
         src/visualizer/point_cloud_renderer.cpp
         src/visualizer/trajectory_renderer.cpp
+        src/visualizer/camera_controller.cpp
     )
 endif()
 
@@ -156,6 +157,18 @@ if(BUILD_TESTS)
                 GTest::Main
             )
             add_test(NAME trajectory_renderer_test COMMAND test_trajectory_renderer)
+
+            add_executable(test_camera_controller
+                tests/visualizer/test_camera_controller.cpp
+                src/visualizer/camera_controller.cpp
+            )
+            target_link_libraries(test_camera_controller
+                ${OpenCV_LIBS}
+                Eigen3::Eigen
+                GTest::GTest
+                GTest::Main
+            )
+            add_test(NAME camera_controller_test COMMAND test_camera_controller)
 
             message(STATUS "  Visualizer tests: ENABLED")
         endif()
