@@ -208,11 +208,11 @@ TEST_F(CameraControllerTest, ViewMatrixComputation) {
     EXPECT_EQ(viewMatrix.rows(), 4);
     EXPECT_EQ(viewMatrix.cols(), 4);
 
-    // Bottom row should be [0, 0, -1, 0] for standard view matrix
+    // Bottom row should be [0, 0, 0, 1] for homogeneous coordinates
     EXPECT_NEAR(viewMatrix(3, 0), 0.0f, EPSILON);
     EXPECT_NEAR(viewMatrix(3, 1), 0.0f, EPSILON);
-    EXPECT_NEAR(viewMatrix(3, 2), -1.0f, EPSILON);
-    EXPECT_NEAR(viewMatrix(3, 3), 0.0f, EPSILON);
+    EXPECT_NEAR(viewMatrix(3, 2), 0.0f, EPSILON);
+    EXPECT_NEAR(viewMatrix(3, 3), 1.0f, EPSILON);
 }
 
 TEST_F(CameraControllerTest, SmoothingEnabled) {
@@ -261,6 +261,7 @@ TEST_F(CameraControllerTest, MultipleMouseButtons) {
 
     // Release correct button
     controller.onMouseRelease(0);
+    controller.update(0.0f);
 
     // Camera should have orbited (left button behavior)
     EXPECT_FALSE(controller.getPosition().isApprox(config_.initialEye, 0.1f));
