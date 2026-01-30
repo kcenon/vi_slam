@@ -10,6 +10,7 @@ import com.vi.slam.android.data.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Before
@@ -43,8 +44,8 @@ class SettingsViewModelTest {
 
     @Test
     fun `initial settings should have default values`() = runTest {
-        advanceUntilIdle()
-        val settings = viewModel.settings.value
+        // Collect settings to activate the flow
+        val settings = viewModel.settings.first()
 
         assertEquals(SettingsRepository.DEFAULT_RESOLUTION_WIDTH, settings.resolutionWidth)
         assertEquals(SettingsRepository.DEFAULT_RESOLUTION_HEIGHT, settings.resolutionHeight)
@@ -57,76 +58,90 @@ class SettingsViewModelTest {
 
     @Test
     fun `updateResolution should update resolution width and height`() = runTest {
+        // First collect to activate the StateFlow
+        viewModel.settings.first()
+
         viewModel.updateResolution(1280, 720)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        // Collect again after update
+        val settings = viewModel.settings.first()
         assertEquals(1280, settings.resolutionWidth)
         assertEquals(720, settings.resolutionHeight)
     }
 
     @Test
     fun `updateFps should update FPS value`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateFps(60)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals(60, settings.fps)
     }
 
     @Test
     fun `updateServerIp should update server IP`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateServerIp("10.0.0.1")
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals("10.0.0.1", settings.serverIp)
     }
 
     @Test
     fun `updateServerPort should update valid port`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateServerPort(9090)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals(9090, settings.serverPort)
     }
 
     @Test
     fun `updateServerPort should reject port below 1`() = runTest {
-        val originalPort = viewModel.settings.value.serverPort
+        val originalPort = viewModel.settings.first().serverPort
         viewModel.updateServerPort(0)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals(originalPort, settings.serverPort)
     }
 
     @Test
     fun `updateServerPort should reject port above 65535`() = runTest {
-        val originalPort = viewModel.settings.value.serverPort
+        val originalPort = viewModel.settings.first().serverPort
         viewModel.updateServerPort(65536)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals(originalPort, settings.serverPort)
     }
 
     @Test
     fun `updateEnableImu should update IMU enabled state`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateEnableImu(false)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertFalse(settings.enableImu)
     }
 
     @Test
     fun `updateImuRate should update IMU rate`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateImuRate(400)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals(400, settings.imuRate)
     }
 
@@ -168,10 +183,12 @@ class SettingsViewModelTest {
 
     @Test
     fun `AppSettings resolutionString should format correctly`() = runTest {
+        viewModel.settings.first() // Activate flow
+
         viewModel.updateResolution(1280, 720)
         advanceUntilIdle()
 
-        val settings = viewModel.settings.value
+        val settings = viewModel.settings.first()
         assertEquals("1280x720", settings.resolutionString)
     }
 }
