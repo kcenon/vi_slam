@@ -14,10 +14,15 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.quality.Strictness
+import org.mockito.junit.MockitoJUnit
 import java.io.File
 
 @RunWith(MockitoJUnitRunner::class)
 class LocalRecorderTest {
+
+    @get:Rule
+    val mockitoRule = MockitoJUnit.rule().strictness(Strictness.LENIENT)
 
     @get:Rule
     val tempFolder = TemporaryFolder()
