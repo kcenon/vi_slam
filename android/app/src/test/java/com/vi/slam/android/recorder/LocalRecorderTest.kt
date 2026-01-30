@@ -67,28 +67,25 @@ class LocalRecorderTest {
         assertFalse("Recorder should not be enabled after initialize", recorder.isEnabled())
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testInitialize_invalidDirectory_doesNotExist() {
         val nonExistentDir = File(tempFolder.root, "nonexistent")
-        val invalidConfig = config.copy(outputDirectory = nonExistentDir)
-
-        val result = recorder.initialize(invalidConfig)
-
-        assertTrue("Initialize should fail for non-existent directory", result.isFailure)
+        // RecorderConfig init block validates directory, should throw IllegalArgumentException
+        config.copy(outputDirectory = nonExistentDir)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testInitialize_invalidDirectory_notWritable() {
         val readOnlyDir = tempFolder.newFolder("readonly")
         readOnlyDir.setWritable(false)
 
-        val invalidConfig = config.copy(outputDirectory = readOnlyDir)
-        val result = recorder.initialize(invalidConfig)
-
-        // Clean up
-        readOnlyDir.setWritable(true)
-
-        assertTrue("Initialize should fail for non-writable directory", result.isFailure)
+        try {
+            // RecorderConfig init block validates directory, should throw IllegalArgumentException
+            config.copy(outputDirectory = readOnlyDir)
+        } finally {
+            // Clean up
+            readOnlyDir.setWritable(true)
+        }
     }
 
     @Test
