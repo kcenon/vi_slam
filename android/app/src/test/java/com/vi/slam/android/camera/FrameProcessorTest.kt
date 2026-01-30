@@ -49,17 +49,15 @@ class FrameProcessorTest {
         `when`(mockImage.height).thenReturn(testHeight)
         `when`(mockImage.timestamp).thenReturn(testTimestamp)
 
-        // Configure mock capture result
+        // Configure mock planes for YUV image first
+        setupMockPlanes()
+
+        // Configure mock capture result AFTER planes setup
         // Note: CaptureResult.get() is generic, but the actual Android implementation
         // may return different types. Mock returns exact types.
         // SENSOR_EXPOSURE_TIME returns Long, SENSOR_SENSITIVITY returns Int
-        @Suppress("UNCHECKED_CAST")
-        doReturn(testExposureTime as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME as CaptureResult.Key<Any>)
-        @Suppress("UNCHECKED_CAST")
-        doReturn(testIso as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY as CaptureResult.Key<Any>)
-
-        // Configure mock planes for YUV image
-        setupMockPlanes()
+        lenient().doReturn(testExposureTime).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME)
+        lenient().doReturn(testIso).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY)
     }
 
     private fun setupMockPlanes() {
@@ -203,10 +201,8 @@ class FrameProcessorTest {
         val testIso2 = 1600
 
         `when`(mockImage.timestamp).thenReturn(testTimestamp2)
-        @Suppress("UNCHECKED_CAST")
-        doReturn(testExposure2 as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME as CaptureResult.Key<Any>)
-        @Suppress("UNCHECKED_CAST")
-        doReturn(testIso2 as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY as CaptureResult.Key<Any>)
+        lenient().doReturn(testExposure2).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME)
+        lenient().doReturn(testIso2).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY)
 
         val result = processor.processFrame(mockImage, mockCaptureResult)
 
@@ -283,8 +279,7 @@ class FrameProcessorTest {
         )
 
         exposureTimes.forEach { exposure ->
-            @Suppress("UNCHECKED_CAST")
-            doReturn(exposure as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME as CaptureResult.Key<Any>)
+            lenient().doReturn(exposure).`when`(mockCaptureResult).get(CaptureResult.SENSOR_EXPOSURE_TIME)
 
             val result = processor.processFrame(mockImage, mockCaptureResult)
             assertEquals(exposure, result.metadata.exposureTimeNs)
@@ -296,8 +291,7 @@ class FrameProcessorTest {
         val isoValues = listOf(100, 200, 400, 800, 1600, 3200)
 
         isoValues.forEach { iso ->
-            @Suppress("UNCHECKED_CAST")
-            doReturn(iso as Any).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY as CaptureResult.Key<Any>)
+            lenient().doReturn(iso).`when`(mockCaptureResult).get(CaptureResult.SENSOR_SENSITIVITY)
 
             val result = processor.processFrame(mockImage, mockCaptureResult)
             assertEquals(iso, result.metadata.iso)
