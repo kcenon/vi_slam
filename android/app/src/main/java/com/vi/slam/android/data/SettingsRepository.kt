@@ -14,11 +14,23 @@ import kotlinx.coroutines.flow.map
 /**
  * Repository for application settings using DataStore.
  * Provides persistent storage for camera configuration and server connection settings.
+ *
+ * @param context Application context
+ * @param dataStoreName Name for the DataStore instance (defaults to "settings")
  */
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(
+    private val context: Context,
+    private val dataStoreName: String = "settings"
+) {
 
     companion object {
-        private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+        private val datastores = mutableMapOf<String, DataStore<Preferences>>()
+
+        private fun Context.getDataStore(name: String): DataStore<Preferences> {
+            return datastores.getOrPut(name) {
+                preferencesDataStore(name = name).getValue(this, String::javaClass)
+            }
+        }
 
         // Keys for settings
         private val CAMERA_RESOLUTION_WIDTH = intPreferencesKey("camera_resolution_width")
@@ -42,7 +54,7 @@ class SettingsRepository(private val context: Context) {
     /**
      * Flow of all settings.
      */
-    val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { preferences ->
+    val settingsFlow: Flow<AppSettings> = context.getDataStore(dataStoreName).data.map { preferences ->
         AppSettings(
             resolutionWidth = preferences[CAMERA_RESOLUTION_WIDTH] ?: DEFAULT_RESOLUTION_WIDTH,
             resolutionHeight = preferences[CAMERA_RESOLUTION_HEIGHT] ?: DEFAULT_RESOLUTION_HEIGHT,
@@ -58,7 +70,7 @@ class SettingsRepository(private val context: Context) {
      * Update camera resolution.
      */
     suspend fun updateResolution(width: Int, height: Int) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[CAMERA_RESOLUTION_WIDTH] = width
             preferences[CAMERA_RESOLUTION_HEIGHT] = height
         }
@@ -68,7 +80,7 @@ class SettingsRepository(private val context: Context) {
      * Update camera FPS.
      */
     suspend fun updateFps(fps: Int) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[CAMERA_FPS] = fps
         }
     }
@@ -77,7 +89,7 @@ class SettingsRepository(private val context: Context) {
      * Update server IP address.
      */
     suspend fun updateServerIp(ip: String) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[SERVER_IP] = ip
         }
     }
@@ -86,7 +98,7 @@ class SettingsRepository(private val context: Context) {
      * Update server port.
      */
     suspend fun updateServerPort(port: Int) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[SERVER_PORT] = port
         }
     }
@@ -95,7 +107,7 @@ class SettingsRepository(private val context: Context) {
      * Update IMU enabled state.
      */
     suspend fun updateEnableImu(enabled: Boolean) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[ENABLE_IMU] = enabled
         }
     }
@@ -104,7 +116,7 @@ class SettingsRepository(private val context: Context) {
      * Update IMU sample rate.
      */
     suspend fun updateImuRate(rate: Int) {
-        context.dataStore.edit { preferences ->
+        context.getDataStore(dataStoreName).edit { preferences ->
             preferences[IMU_RATE] = rate
         }
     }
