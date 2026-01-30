@@ -98,6 +98,8 @@ TEST_F(RendererTest, RenderLoop) {
 TEST_F(RendererTest, ViewProjectionMatrices) {
     Renderer renderer;
     Renderer::Config config;
+    config.width = 640;
+    config.height = 480;
 
     if (!renderer.initialize(config)) {
         GTEST_SKIP() << "Skipping test - no display available";
@@ -139,6 +141,8 @@ TEST_F(RendererTest, ShutdownBeforeInit) {
 TEST_F(RendererTest, MultipleShutdown) {
     Renderer renderer;
     Renderer::Config config;
+    config.width = 640;
+    config.height = 480;
 
     if (!renderer.initialize(config)) {
         GTEST_SKIP() << "Skipping test - no display available";

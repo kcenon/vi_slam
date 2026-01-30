@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>
 
 namespace vi_slam {
@@ -37,7 +38,7 @@ public:
      * @param config Rendering configuration
      * @return true if initialization succeeded
      */
-    bool initialize(const Config& config = Config());
+    bool initialize(const Config& config);
 
     /**
      * @brief Shutdown and cleanup resources

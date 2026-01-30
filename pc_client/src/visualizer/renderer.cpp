@@ -5,6 +5,7 @@
 #endif
 
 #include <GLFW/glfw3.h>
+#include <Eigen/Geometry>
 #include <iostream>
 #include <cmath>
 
@@ -18,7 +19,7 @@ void glfwErrorCallback(int error, const char* description) {
 }
 
 // Window resize callback
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void framebufferSizeCallback(GLFWwindow*, int width, int height) {
     glViewport(0, 0, width, height);
 }
 } // anonymous namespace
