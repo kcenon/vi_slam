@@ -56,6 +56,7 @@ if(glfw3_FOUND)
         src/visualizer/point_cloud_renderer.cpp
         src/visualizer/trajectory_renderer.cpp
         src/visualizer/camera_controller.cpp
+        src/visualizer/status_overlay.cpp
     )
 endif()
 
@@ -169,6 +170,20 @@ if(BUILD_TESTS)
                 GTest::Main
             )
             add_test(NAME camera_controller_test COMMAND test_camera_controller)
+
+            add_executable(test_status_overlay
+                tests/visualizer/test_status_overlay.cpp
+                src/visualizer/status_overlay.cpp
+            )
+            target_link_libraries(test_status_overlay
+                ${OpenCV_LIBS}
+                Eigen3::Eigen
+                glfw
+                ${OPENGL_LIBRARIES}
+                GTest::GTest
+                GTest::Main
+            )
+            add_test(NAME status_overlay_test COMMAND test_status_overlay)
 
             message(STATUS "  Visualizer tests: ENABLED")
         endif()
