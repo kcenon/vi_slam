@@ -43,18 +43,32 @@ class CalibrationExporter {
         val intrinsics: IntrinsicCalibResult,
         val extrinsics: ExtrinsicCalibResult? = null,
         val timeOffset: TimeOffsetEstimator.TimeOffsetResult? = null,
-        val metadata: CalibrationMetadata = CalibrationMetadata()
+        val metadata: CalibrationMetadata? = null
     )
 
     /**
      * Calibration metadata
      */
     data class CalibrationMetadata(
-        val timestamp: Long = System.currentTimeMillis(),
-        val deviceModel: String = android.os.Build.MODEL,
-        val deviceManufacturer: String = android.os.Build.MANUFACTURER,
-        val appVersion: String = "1.0.0"
+        val timestamp: Long,
+        val deviceModel: String,
+        val deviceManufacturer: String,
+        val appVersion: String
     )
+
+    companion object {
+        /**
+         * Create metadata with Android device information
+         */
+        fun createMetadata(appVersion: String = "1.0.0"): CalibrationMetadata {
+            return CalibrationMetadata(
+                timestamp = System.currentTimeMillis(),
+                deviceModel = android.os.Build.MODEL,
+                deviceManufacturer = android.os.Build.MANUFACTURER,
+                appVersion = appVersion
+            )
+        }
+    }
 
     /**
      * Export complete calibration to YAML (Kalibr format)
@@ -127,7 +141,9 @@ class CalibrationExporter {
         }
 
         // Metadata
-        data["metadata"] = buildMetadataYaml(calibration.metadata)
+        if (calibration.metadata != null) {
+            data["metadata"] = buildMetadataYaml(calibration.metadata)
+        }
 
         return data
     }
@@ -250,12 +266,14 @@ class CalibrationExporter {
         }
 
         // Metadata
-        data["metadata"] = mapOf(
-            "timestamp" to calibration.metadata.timestamp,
-            "device_model" to calibration.metadata.deviceModel,
-            "device_manufacturer" to calibration.metadata.deviceManufacturer,
-            "app_version" to calibration.metadata.appVersion
-        )
+        if (calibration.metadata != null) {
+            data["metadata"] = mapOf(
+                "timestamp" to calibration.metadata.timestamp,
+                "device_model" to calibration.metadata.deviceModel,
+                "device_manufacturer" to calibration.metadata.deviceManufacturer,
+                "app_version" to calibration.metadata.appVersion
+            )
+        }
 
         return data
     }

@@ -13,10 +13,18 @@ import kotlinx.coroutines.launch
 /**
  * ViewModel for the settings screen.
  * Manages application settings and their persistence.
+ *
+ * @param application Application context
+ * @param sharingStarted Sharing strategy for the StateFlow (defaults to WhileSubscribed for production)
+ * @param dataStoreName Name for the DataStore instance (defaults to "settings")
  */
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+class SettingsViewModel(
+    application: Application,
+    sharingStarted: SharingStarted = SharingStarted.WhileSubscribed(5000),
+    dataStoreName: String = "settings"
+) : AndroidViewModel(application) {
 
-    private val repository = SettingsRepository(application)
+    private val repository = SettingsRepository(application, dataStoreName)
 
     /**
      * Current settings as a StateFlow.
@@ -24,7 +32,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val settings: StateFlow<AppSettings> = repository.settingsFlow
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = sharingStarted,
             initialValue = AppSettings()
         )
 
