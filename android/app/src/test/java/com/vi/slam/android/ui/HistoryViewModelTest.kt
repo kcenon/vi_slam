@@ -1,6 +1,7 @@
 package com.vi.slam.android.ui
 
 import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import com.vi.slam.android.data.Session
 import com.vi.slam.android.data.SortCriteria
 import kotlinx.coroutines.Dispatchers
@@ -10,27 +11,26 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.*
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Unit tests for HistoryViewModel.
  * Tests session list management, search, and sort functionality.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class HistoryViewModelTest {
 
     private lateinit var viewModel: HistoryViewModel
-    private lateinit var mockApplication: Application
+    private lateinit var testApplication: Application
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockApplication = mock(Application::class.java)
-        `when`(mockApplication.applicationContext).thenReturn(mockApplication)
-        `when`(mockApplication.filesDir).thenReturn(mock())
-        viewModel = HistoryViewModel(mockApplication)
+        testApplication = ApplicationProvider.getApplicationContext()
+        viewModel = HistoryViewModel(testApplication)
     }
 
     @After

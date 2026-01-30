@@ -1,6 +1,7 @@
 package com.vi.slam.android.recorder
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.vi.slam.android.sensor.IMUSample
 import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
@@ -11,6 +12,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
 import java.io.File
 
@@ -23,12 +25,27 @@ class LocalRecorderTest {
     @Mock
     private lateinit var mockContext: Context
 
+    @Mock
+    private lateinit var mockSharedPreferences: SharedPreferences
+
+    @Mock
+    private lateinit var mockEditor: SharedPreferences.Editor
+
     private lateinit var recorder: LocalRecorder
     private lateinit var outputDir: File
     private lateinit var config: RecorderConfig
 
     @Before
     fun setUp() {
+        // Setup SharedPreferences mocking
+        `when`(mockContext.getSharedPreferences("vi_slam_recorder_state", Context.MODE_PRIVATE))
+            .thenReturn(mockSharedPreferences)
+        `when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        `when`(mockEditor.putString(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(mockEditor)
+        `when`(mockSharedPreferences.getString(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(null)
+
         outputDir = tempFolder.newFolder("recordings")
         config = RecorderConfig(
             outputDirectory = outputDir,
