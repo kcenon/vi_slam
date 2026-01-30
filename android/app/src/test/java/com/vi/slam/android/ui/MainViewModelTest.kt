@@ -1,6 +1,7 @@
 package com.vi.slam.android.ui
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.vi.slam.android.recorder.IRecorder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -9,25 +10,28 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.*
+import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Unit tests for MainViewModel.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class MainViewModelTest {
 
     private lateinit var viewModel: MainViewModel
-    private lateinit var mockContext: Context
+    private lateinit var testContext: Context
     private lateinit var mockRecorder: IRecorder
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockContext = mock(Context::class.java)
+        testContext = ApplicationProvider.getApplicationContext()
         mockRecorder = mock(IRecorder::class.java)
-        viewModel = MainViewModel(mockContext, mockRecorder)
+        viewModel = MainViewModel(testContext, mockRecorder)
     }
 
     @After

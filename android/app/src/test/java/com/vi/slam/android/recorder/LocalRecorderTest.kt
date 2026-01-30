@@ -1,6 +1,7 @@
 package com.vi.slam.android.recorder
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.vi.slam.android.sensor.IMUSample
 import com.vi.slam.android.sensor.SensorType
 import com.vi.slam.android.sensor.SynchronizedData
@@ -11,11 +12,17 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.mockito.Mock
+import org.mockito.Mockito.`when`
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.quality.Strictness
+import org.mockito.junit.MockitoJUnit
 import java.io.File
 
 @RunWith(MockitoJUnitRunner::class)
 class LocalRecorderTest {
+
+    @get:Rule
+    val mockitoRule = MockitoJUnit.rule().strictness(Strictness.LENIENT)
 
     @get:Rule
     val tempFolder = TemporaryFolder()
@@ -23,12 +30,27 @@ class LocalRecorderTest {
     @Mock
     private lateinit var mockContext: Context
 
+    @Mock
+    private lateinit var mockSharedPreferences: SharedPreferences
+
+    @Mock
+    private lateinit var mockEditor: SharedPreferences.Editor
+
     private lateinit var recorder: LocalRecorder
     private lateinit var outputDir: File
     private lateinit var config: RecorderConfig
 
     @Before
     fun setUp() {
+        // Setup SharedPreferences mocking
+        `when`(mockContext.getSharedPreferences("vi_slam_recorder_state", Context.MODE_PRIVATE))
+            .thenReturn(mockSharedPreferences)
+        `when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        `when`(mockEditor.putString(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(mockEditor)
+        `when`(mockSharedPreferences.getString(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString()))
+            .thenReturn(null)
+
         outputDir = tempFolder.newFolder("recordings")
         config = RecorderConfig(
             outputDirectory = outputDir,
@@ -50,28 +72,25 @@ class LocalRecorderTest {
         assertFalse("Recorder should not be enabled after initialize", recorder.isEnabled())
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testInitialize_invalidDirectory_doesNotExist() {
         val nonExistentDir = File(tempFolder.root, "nonexistent")
-        val invalidConfig = config.copy(outputDirectory = nonExistentDir)
-
-        val result = recorder.initialize(invalidConfig)
-
-        assertTrue("Initialize should fail for non-existent directory", result.isFailure)
+        // RecorderConfig init block validates directory, should throw IllegalArgumentException
+        config.copy(outputDirectory = nonExistentDir)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun testInitialize_invalidDirectory_notWritable() {
         val readOnlyDir = tempFolder.newFolder("readonly")
         readOnlyDir.setWritable(false)
 
-        val invalidConfig = config.copy(outputDirectory = readOnlyDir)
-        val result = recorder.initialize(invalidConfig)
-
-        // Clean up
-        readOnlyDir.setWritable(true)
-
-        assertTrue("Initialize should fail for non-writable directory", result.isFailure)
+        try {
+            // RecorderConfig init block validates directory, should throw IllegalArgumentException
+            config.copy(outputDirectory = readOnlyDir)
+        } finally {
+            // Clean up
+            readOnlyDir.setWritable(true)
+        }
     }
 
     @Test

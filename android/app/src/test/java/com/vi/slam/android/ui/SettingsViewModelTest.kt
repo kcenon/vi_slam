@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.test.core.app.ApplicationProvider
 import com.vi.slam.android.data.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,25 +15,25 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.*
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /**
  * Unit tests for SettingsViewModel.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class SettingsViewModelTest {
 
     private lateinit var viewModel: SettingsViewModel
-    private lateinit var mockApplication: Application
+    private lateinit var testApplication: Application
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockApplication = mock(Application::class.java)
-        `when`(mockApplication.applicationContext).thenReturn(mockApplication)
-        viewModel = SettingsViewModel(mockApplication)
+        testApplication = ApplicationProvider.getApplicationContext()
+        viewModel = SettingsViewModel(testApplication)
     }
 
     @After
