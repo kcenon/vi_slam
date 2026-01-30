@@ -19,6 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 find_package(OpenCV 4.5 REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Ceres QUIET)
+find_package(glfw3 QUIET)
 
 # Check if ZMQ is available
 find_package(PkgConfig QUIET)
@@ -48,9 +49,17 @@ set(PC_CLIENT_SOURCES
     src/webrtc_receiver.cpp
 )
 
+# Visualizer sources (optional, only if GLFW is found)
+if(glfw3_FOUND)
+    set(VISUALIZER_SOURCES
+        src/visualizer/renderer.cpp
+    )
+endif()
+
 # Executable
 add_executable(${PROJECT_NAME}
     ${PC_CLIENT_SOURCES}
+    ${VISUALIZER_SOURCES}
 )
 
 # Link libraries
@@ -68,6 +77,13 @@ if(ZMQ_FOUND)
     target_link_libraries(${PROJECT_NAME} ${ZMQ_LINK_LIBRARIES})
     target_include_directories(${PROJECT_NAME} PRIVATE ${ZMQ_INCLUDE_DIRS})
     target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_ZMQ)
+endif()
+
+if(glfw3_FOUND)
+    target_link_libraries(${PROJECT_NAME} glfw)
+    find_package(OpenGL REQUIRED)
+    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+    target_compile_definitions(${PROJECT_NAME} PRIVATE HAVE_VISUALIZER)
 endif()
 
 # Installation
@@ -92,6 +108,25 @@ if(BUILD_TESTS)
             GTest::Main
         )
         add_test(NAME webrtc_receiver_test COMMAND test_webrtc_receiver)
+
+        # Visualizer tests (only if GLFW is found)
+        if(glfw3_FOUND)
+            add_executable(test_renderer
+                tests/visualizer/test_renderer.cpp
+                src/visualizer/renderer.cpp
+            )
+            target_link_libraries(test_renderer
+                ${OpenCV_LIBS}
+                Eigen3::Eigen
+                glfw
+                ${OPENGL_LIBRARIES}
+                GTest::GTest
+                GTest::Main
+            )
+            add_test(NAME renderer_test COMMAND test_renderer)
+            message(STATUS "  Visualizer tests: ENABLED")
+        endif()
+
         message(STATUS "  Tests: ENABLED (GTest found)")
     else()
         message(STATUS "  Tests: DISABLED (GTest not found)")
@@ -127,5 +162,12 @@ if(ZMQ_FOUND)
     message(STATUS "  ZMQ found: YES")
 else()
     message(STATUS "  ZMQ: NOT FOUND (optional)")
+endif()
+if(glfw3_FOUND)
+    message(STATUS "  GLFW3 found: YES")
+    message(STATUS "  Visualizer module: ENABLED")
+else()
+    message(STATUS "  GLFW3: NOT FOUND (optional)")
+    message(STATUS "  Visualizer module: DISABLED")
 endif()
 message(STATUS "")
