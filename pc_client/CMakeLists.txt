@@ -54,6 +54,7 @@ if(glfw3_FOUND)
     set(VISUALIZER_SOURCES
         src/visualizer/renderer.cpp
         src/visualizer/point_cloud_renderer.cpp
+        src/visualizer/trajectory_renderer.cpp
     )
 endif()
 
@@ -140,6 +141,21 @@ if(BUILD_TESTS)
                 GTest::Main
             )
             add_test(NAME point_cloud_renderer_test COMMAND test_point_cloud_renderer)
+
+            add_executable(test_trajectory_renderer
+                tests/visualizer/test_trajectory_renderer.cpp
+                src/visualizer/renderer.cpp
+                src/visualizer/trajectory_renderer.cpp
+            )
+            target_link_libraries(test_trajectory_renderer
+                ${OpenCV_LIBS}
+                Eigen3::Eigen
+                glfw
+                ${OPENGL_LIBRARIES}
+                GTest::GTest
+                GTest::Main
+            )
+            add_test(NAME trajectory_renderer_test COMMAND test_trajectory_renderer)
 
             message(STATUS "  Visualizer tests: ENABLED")
         endif()
