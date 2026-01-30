@@ -53,6 +53,7 @@ set(PC_CLIENT_SOURCES
 if(glfw3_FOUND)
     set(VISUALIZER_SOURCES
         src/visualizer/renderer.cpp
+        src/visualizer/point_cloud_renderer.cpp
     )
 endif()
 
@@ -124,6 +125,22 @@ if(BUILD_TESTS)
                 GTest::Main
             )
             add_test(NAME renderer_test COMMAND test_renderer)
+
+            add_executable(test_point_cloud_renderer
+                tests/visualizer/test_point_cloud_renderer.cpp
+                src/visualizer/renderer.cpp
+                src/visualizer/point_cloud_renderer.cpp
+            )
+            target_link_libraries(test_point_cloud_renderer
+                ${OpenCV_LIBS}
+                Eigen3::Eigen
+                glfw
+                ${OPENGL_LIBRARIES}
+                GTest::GTest
+                GTest::Main
+            )
+            add_test(NAME point_cloud_renderer_test COMMAND test_point_cloud_renderer)
+
             message(STATUS "  Visualizer tests: ENABLED")
         endif()
 
