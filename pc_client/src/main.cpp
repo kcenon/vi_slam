@@ -10,6 +10,7 @@
 #include "imgui_impl_opengl3.h"
 #include "ui/connection_panel.hpp"
 #include "ui/stats_panel.hpp"
+#include "ui/framework_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -115,6 +116,22 @@ int main(int argc, char** argv) {
     // Initialize UI panels
     vi_slam::ui::ConnectionPanel connectionPanel;
     vi_slam::ui::StatsPanel statsPanel;
+    vi_slam::ui::FrameworkPanel frameworkPanel;
+
+    // Set up framework panel callbacks
+    frameworkPanel.setFrameworkChangeCallback([](const std::string& frameworkId) {
+        std::cout << "Framework changed to: " << frameworkId << std::endl;
+        // In production, this would notify the SLAM backend
+    });
+
+    frameworkPanel.setConfigApplyCallback([](const std::string& frameworkId,
+                                             const std::map<std::string, std::string>& config) {
+        std::cout << "Applying configuration for: " << frameworkId << std::endl;
+        for (const auto& [key, value] : config) {
+            std::cout << "  " << key << " = " << value << std::endl;
+        }
+        // In production, this would send configuration to SLAM backend
+    });
 
     // Set up callbacks after panels are initialized
     receiver.setVideoCallback([&frameCount, &statsPanel](const cv::Mat& frame, int64_t timestamp) {
@@ -152,6 +169,7 @@ int main(int argc, char** argv) {
         connectionPanel.update(receiver, signalingUrl);
         statsPanel.update();
         statsPanel.updateRates(frameCount, imuCount);
+        frameworkPanel.update();
         connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
@@ -167,6 +185,7 @@ int main(int argc, char** argv) {
         // UI panels
         connectionPanel.render(receiver, signalingUrl);
         statsPanel.render(receiver, frameCount, imuCount);
+        frameworkPanel.render();
 
         // Main dashboard window
         if (showMainWindow) {
