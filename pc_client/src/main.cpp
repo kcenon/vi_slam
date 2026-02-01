@@ -9,6 +9,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "ui/connection_panel.hpp"
+#include "ui/stats_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -96,24 +97,9 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Set up callbacks
+    // Initialize counters
     int frameCount = 0;
     int imuCount = 0;
-
-    receiver.setVideoCallback([&frameCount](const cv::Mat& frame, int64_t timestamp) {
-        if (++frameCount % 30 == 0) {  // Print every 30 frames
-            std::cout << "Received frame: " << frame.cols << "x" << frame.rows
-                      << " at " << timestamp << std::endl;
-        }
-    });
-
-    receiver.setIMUCallback([&imuCount](const vi_slam::IMUSample& imu) {
-        if (++imuCount % 100 == 0) {  // Print every 100 samples
-            std::cout << "Received IMU: acc=(" << imu.accX << ", " << imu.accY
-                      << ", " << imu.accZ << ") gyro=(" << imu.gyroX << ", "
-                      << imu.gyroY << ", " << imu.gyroZ << ")" << std::endl;
-        }
-    });
 
     // Default signaling URL or from command line
     std::string signalingUrl = "ws://localhost:8080";
@@ -126,8 +112,35 @@ int main(int argc, char** argv) {
     bool showMainWindow = true;
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    // Initialize connection panel
+    // Initialize UI panels
     vi_slam::ui::ConnectionPanel connectionPanel;
+    vi_slam::ui::StatsPanel statsPanel;
+
+    // Set up callbacks after panels are initialized
+    receiver.setVideoCallback([&frameCount, &statsPanel](const cv::Mat& frame, int64_t timestamp) {
+        frameCount++;
+        // Estimate frame size (width * height * channels)
+        size_t frameSize = frame.total() * frame.elemSize();
+        statsPanel.recordFrame(frameSize);
+
+        if (frameCount % 30 == 0) {  // Print every 30 frames
+            std::cout << "Received frame: " << frame.cols << "x" << frame.rows
+                      << " at " << timestamp << std::endl;
+        }
+    });
+
+    receiver.setIMUCallback([&imuCount, &statsPanel](const vi_slam::IMUSample& imu) {
+        imuCount++;
+        // IMU sample size (6 floats + 1 int64_t timestamp)
+        size_t imuSize = sizeof(float) * 6 + sizeof(int64_t);
+        statsPanel.recordIMUSample(imuSize);
+
+        if (imuCount % 100 == 0) {  // Print every 100 samples
+            std::cout << "Received IMU: acc=(" << imu.accX << ", " << imu.accY
+                      << ", " << imu.accZ << ") gyro=(" << imu.gyroX << ", "
+                      << imu.gyroY << ", " << imu.gyroZ << ")" << std::endl;
+        }
+    });
 
     std::cout << "\nEntering main loop. Close window to exit." << std::endl;
 
@@ -135,8 +148,10 @@ int main(int argc, char** argv) {
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
-        // Update connection panel state (auto-reconnect, etc.)
+        // Update UI panels state
         connectionPanel.update(receiver, signalingUrl);
+        statsPanel.update();
+        statsPanel.updateRates(frameCount, imuCount);
         connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
@@ -149,8 +164,9 @@ int main(int argc, char** argv) {
             ImGui::ShowDemoWindow(&showDemoWindow);
         }
 
-        // Connection status panel
+        // UI panels
         connectionPanel.render(receiver, signalingUrl);
+        statsPanel.render(receiver, frameCount, imuCount);
 
         // Main dashboard window
         if (showMainWindow) {
