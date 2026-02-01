@@ -66,6 +66,7 @@ if(glfw3_FOUND)
         src/visualizer/trajectory_renderer.cpp
         src/visualizer/camera_controller.cpp
         src/visualizer/status_overlay.cpp
+        src/ui/connection_panel.cpp
     )
 
     # Dear ImGui sources
