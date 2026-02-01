@@ -11,6 +11,7 @@
 #include "ui/connection_panel.hpp"
 #include "ui/stats_panel.hpp"
 #include "ui/framework_panel.hpp"
+#include "ui/export_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -117,6 +118,7 @@ int main(int argc, char** argv) {
     vi_slam::ui::ConnectionPanel connectionPanel;
     vi_slam::ui::StatsPanel statsPanel;
     vi_slam::ui::FrameworkPanel frameworkPanel;
+    vi_slam::ui::ExportPanel exportPanel;
 
     // Set up framework panel callbacks
     frameworkPanel.setFrameworkChangeCallback([](const std::string& frameworkId) {
@@ -131,6 +133,30 @@ int main(int argc, char** argv) {
             std::cout << "  " << key << " = " << value << std::endl;
         }
         // In production, this would send configuration to SLAM backend
+    });
+
+    // Set up export panel callback
+    exportPanel.setExportCallback([](vi_slam::ui::ExportPanel::ExportFormat format,
+                                     vi_slam::ui::ExportPanel::ExportScope scope,
+                                     const std::string& filepath,
+                                     std::atomic<float>& progress,
+                                     std::atomic<bool>& cancelled) -> bool {
+        std::cout << "Starting export to: " << filepath << std::endl;
+
+        // Simulate export progress
+        for (int i = 0; i <= 100; i += 10) {
+            if (cancelled) {
+                std::cout << "Export cancelled" << std::endl;
+                return false;
+            }
+
+            progress = i / 100.0f;
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+
+        std::cout << "Export completed successfully" << std::endl;
+        // In production, this would perform actual export operation
+        return true;
     });
 
     // Set up callbacks after panels are initialized
@@ -170,6 +196,7 @@ int main(int argc, char** argv) {
         statsPanel.update();
         statsPanel.updateRates(frameCount, imuCount);
         frameworkPanel.update();
+        exportPanel.update();
         connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
@@ -186,6 +213,7 @@ int main(int argc, char** argv) {
         connectionPanel.render(receiver, signalingUrl);
         statsPanel.render(receiver, frameCount, imuCount);
         frameworkPanel.render();
+        exportPanel.render();
 
         // Main dashboard window
         if (showMainWindow) {
