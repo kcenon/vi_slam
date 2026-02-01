@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "ui/connection_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -125,11 +126,18 @@ int main(int argc, char** argv) {
     bool showMainWindow = true;
     ImVec4 clearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    // Initialize connection panel
+    vi_slam::ui::ConnectionPanel connectionPanel;
+
     std::cout << "\nEntering main loop. Close window to exit." << std::endl;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        // Update connection panel state (auto-reconnect, etc.)
+        connectionPanel.update(receiver, signalingUrl);
+        connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -141,37 +149,14 @@ int main(int argc, char** argv) {
             ImGui::ShowDemoWindow(&showDemoWindow);
         }
 
+        // Connection status panel
+        connectionPanel.render(receiver, signalingUrl);
+
         // Main dashboard window
         if (showMainWindow) {
             ImGui::Begin("VI-SLAM PC Client Dashboard", &showMainWindow);
 
             ImGui::Text("Welcome to VI-SLAM PC Client!");
-            ImGui::Separator();
-
-            // Connection section
-            ImGui::Text("Connection");
-            ImGui::Text("Signaling URL: %s", signalingUrl.c_str());
-
-            if (!connected) {
-                if (ImGui::Button("Connect")) {
-                    std::cout << "Connecting to signaling server: " << signalingUrl << std::endl;
-                    if (receiver.connect(signalingUrl)) {
-                        connected = true;
-                        std::cout << "Connected!" << std::endl;
-                    } else {
-                        std::cerr << "Failed to connect" << std::endl;
-                    }
-                }
-            } else {
-                ImGui::Text("Status: Connected");
-                if (ImGui::Button("Disconnect")) {
-                    std::cout << "Disconnecting..." << std::endl;
-                    receiver.disconnect();
-                    connected = false;
-                    std::cout << "Disconnected" << std::endl;
-                }
-            }
-
             ImGui::Separator();
 
             // Statistics section
