@@ -26,9 +26,9 @@ FrameworkPanel::FrameworkPanel()
         {"Pyramid Levels", "nLevels", Parameter::INT, "8", "8", {},
          "Number of pyramid levels", 1.0f, 12.0f},
         {"Feature Type", "featureType", Parameter::ENUM, "ORB", "ORB",
-         {"ORB", "SIFT", "SURF"}, "Feature detector type"},
+         {"ORB", "SIFT", "SURF"}, "Feature detector type", 0.0f, 0.0f},
         {"Use Viewer", "useViewer", Parameter::BOOL, "true", "true", {},
-         "Enable 3D visualization"}
+         "Enable 3D visualization", 0.0f, 0.0f}
     };
     addFramework(orbslam3);
 
@@ -40,11 +40,11 @@ FrameworkPanel::FrameworkPanel()
         {"Max Features", "maxFeatures", Parameter::INT, "2000", "2000", {},
          "Maximum number of features", 500.0f, 10000.0f},
         {"Tracking Quality", "trackingQuality", Parameter::ENUM, "HIGH", "HIGH",
-         {"LOW", "MEDIUM", "HIGH"}, "Tracking quality preset"},
+         {"LOW", "MEDIUM", "HIGH"}, "Tracking quality preset", 0.0f, 0.0f},
         {"Enable Loop Closure", "enableLoopClosure", Parameter::BOOL, "true", "true", {},
-         "Enable loop closure detection"},
+         "Enable loop closure detection", 0.0f, 0.0f},
         {"Vocabulary Path", "vocabPath", Parameter::STRING, "./vocab.dbow2", "./vocab.dbow2", {},
-         "Path to vocabulary file"}
+         "Path to vocabulary file", 0.0f, 0.0f}
     };
     addFramework(openvslam);
 }
@@ -92,11 +92,9 @@ void FrameworkPanel::render() {
     ImGui::Separator();
 
     // Render parameter widgets
-    bool anyChanged = false;
     auto& params = frameworks_[selectedFrameworkIndex_].parameters;
     for (auto& param : params) {
         if (renderParameterWidget(param)) {
-            anyChanged = true;
             configChanged_ = true;
         }
     }
