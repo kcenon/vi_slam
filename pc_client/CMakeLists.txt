@@ -68,6 +68,7 @@ if(glfw3_FOUND)
         src/visualizer/status_overlay.cpp
         src/ui/connection_panel.cpp
         src/ui/stats_panel.cpp
+        src/ui/framework_panel.cpp
     )
 
     # Dear ImGui sources
