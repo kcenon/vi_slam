@@ -13,6 +13,7 @@
 #include "ui/framework_panel.hpp"
 #include "ui/export_panel.hpp"
 #include "ui/visualization_panel.hpp"
+#include "ui/config_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -121,6 +122,7 @@ int main(int argc, char** argv) {
     vi_slam::ui::FrameworkPanel frameworkPanel;
     vi_slam::ui::ExportPanel exportPanel;
     vi_slam::ui::VisualizationPanel visualizationPanel;
+    vi_slam::ui::ConfigPanel configPanel;
 
     // Initialize visualization panel
     if (!visualizationPanel.initialize()) {
@@ -141,6 +143,15 @@ int main(int argc, char** argv) {
             std::cout << "  " << key << " = " << value << std::endl;
         }
         // In production, this would send configuration to SLAM backend
+    });
+
+    // Set up configuration panel callback
+    configPanel.setApplyCallback([](const vi_slam::config::Settings& settings) {
+        std::cout << "Configuration applied:" << std::endl;
+        std::cout << "  Display theme: " << settings.getString("display.theme") << std::endl;
+        std::cout << "  FPS limit: " << settings.getInt("performance.fps_limit") << std::endl;
+        std::cout << "  Auto-reconnect: " << (settings.getBool("network.auto_reconnect") ? "enabled" : "disabled") << std::endl;
+        // In production, this would apply settings to active components
     });
 
     // Set up export panel callback
@@ -206,6 +217,7 @@ int main(int argc, char** argv) {
         frameworkPanel.update();
         exportPanel.update();
         visualizationPanel.update();
+        configPanel.update();
         connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
@@ -224,6 +236,7 @@ int main(int argc, char** argv) {
         frameworkPanel.render();
         exportPanel.render();
         visualizationPanel.render();
+        configPanel.render();
 
         // Main dashboard window
         if (showMainWindow) {
