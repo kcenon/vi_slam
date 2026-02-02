@@ -70,6 +70,7 @@ if(glfw3_FOUND)
         src/ui/stats_panel.cpp
         src/ui/framework_panel.cpp
         src/ui/export_panel.cpp
+        src/ui/visualization_panel.cpp
     )
 
     # Dear ImGui sources

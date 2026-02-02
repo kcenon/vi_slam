@@ -12,6 +12,7 @@
 #include "ui/stats_panel.hpp"
 #include "ui/framework_panel.hpp"
 #include "ui/export_panel.hpp"
+#include "ui/visualization_panel.hpp"
 #endif
 
 static void glfwErrorCallback(int error, const char* description) {
@@ -119,6 +120,13 @@ int main(int argc, char** argv) {
     vi_slam::ui::StatsPanel statsPanel;
     vi_slam::ui::FrameworkPanel frameworkPanel;
     vi_slam::ui::ExportPanel exportPanel;
+    vi_slam::ui::VisualizationPanel visualizationPanel;
+
+    // Initialize visualization panel
+    if (!visualizationPanel.initialize()) {
+        std::cerr << "Failed to initialize visualization panel" << std::endl;
+        // Continue without visualization
+    }
 
     // Set up framework panel callbacks
     frameworkPanel.setFrameworkChangeCallback([](const std::string& frameworkId) {
@@ -197,6 +205,7 @@ int main(int argc, char** argv) {
         statsPanel.updateRates(frameCount, imuCount);
         frameworkPanel.update();
         exportPanel.update();
+        visualizationPanel.update();
         connected = receiver.isConnected();
 
         // Start the Dear ImGui frame
@@ -214,6 +223,7 @@ int main(int argc, char** argv) {
         statsPanel.render(receiver, frameCount, imuCount);
         frameworkPanel.render();
         exportPanel.render();
+        visualizationPanel.render();
 
         // Main dashboard window
         if (showMainWindow) {
