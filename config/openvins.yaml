@@ -1,0 +1,168 @@
+# OpenVINS Configuration File
+# This configuration file follows OpenVINS YAML format conventions
+# Reference: https://docs.openvins.com/
+
+# =============================================================================
+# General Settings
+# =============================================================================
+
+# Camera model options: "pinhole", "radtan", "equidist", "fisheye"
+cam_model: "radtan"
+
+# Number of cameras (1 = monocular, 2 = stereo)
+num_cameras: 1
+
+# Camera ID (0-indexed)
+cam_id: 0
+
+# =============================================================================
+# Feature Tracking Parameters
+# =============================================================================
+
+# Number of features to track
+num_pts: 200
+
+# Use KLT tracker (true) or descriptor-based tracker (false)
+use_klt: true
+
+# FAST corner detection threshold
+fast_threshold: 20
+
+# Grid dimensions for feature distribution
+grid_x: 5
+grid_y: 5
+
+# Minimum pixel distance between features
+min_px_dist: 10
+
+# Number of pyramid levels for KLT tracking
+num_klt_levels: 3
+
+# ArUco tag detection (0 = disabled)
+num_aruco: 0
+
+# =============================================================================
+# IMU Parameters
+# =============================================================================
+
+# IMU sampling rate (Hz)
+imu_rate: 200
+
+# Accelerometer white noise (m/s^2)
+accelerometer_noise_density: 0.1
+
+# Gyroscope white noise (rad/s)
+gyroscope_noise_density: 0.01
+
+# Accelerometer bias random walk (m/s^2/sqrt(Hz))
+accelerometer_random_walk: 0.001
+
+# Gyroscope bias random walk (rad/s/sqrt(Hz))
+gyroscope_random_walk: 0.0001
+
+# Gravity magnitude (m/s^2)
+gravity_mag: 9.81
+
+# =============================================================================
+# State Estimation Parameters
+# =============================================================================
+
+# Maximum number of clones (camera poses) in the state
+max_clones: 11
+
+# Maximum number of SLAM features in the state
+max_slam: 50
+
+# Maximum MSCKF features per update
+max_msckf_update: 999
+
+# Use zero velocity update
+use_zupt: true
+
+# Zero velocity update threshold (m/s)
+zupt_threshold: 0.02
+
+# Use FEJ (First-Estimate Jacobians)
+use_fej: true
+
+# =============================================================================
+# Initialization Parameters
+# =============================================================================
+
+# IMU initialization window (seconds)
+imu_init_window: 1.0
+
+# Maximum IMU waiting time (seconds)
+max_imu_waiting: 3
+
+# Minimum feature count for initialization
+init_min_features: 15
+
+# Use static IMU initialization
+use_static_init: true
+
+# =============================================================================
+# Camera Intrinsics (Example - EuRoC MAV dataset)
+# =============================================================================
+
+# Camera intrinsics [fx, fy, cx, cy]
+cam0_intrinsics: [458.654, 457.296, 367.215, 248.375]
+
+# Distortion coefficients [k1, k2, p1, p2] for radtan model
+cam0_distortion_coeffs: [-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05]
+
+# Image size [width, height]
+cam0_resolution: [752, 480]
+
+# =============================================================================
+# Camera-IMU Extrinsics
+# =============================================================================
+
+# Transformation from camera to IMU frame (T_imu_cam)
+# Format: [qw, qx, qy, qz, tx, ty, tz]
+T_imu_cam0:
+  qw: 0.0148655429818
+  qx: -0.999880929698
+  qy: 0.00414029679422
+  qz: -0.00485987917536
+  tx: 0.0652229934167
+  ty: -0.0207055214469
+  tz: -0.00808170117104
+
+# Time offset between camera and IMU (td = t_imu - t_cam)
+td_cam0: 0.0
+
+# =============================================================================
+# Advanced Settings
+# =============================================================================
+
+# Use multi-threaded feature tracking
+use_multi_threading: true
+
+# Downsize input images by this factor
+downsize_factor: 1.0
+
+# Enable online calibration of camera-IMU extrinsics
+do_calib_camera_pose: false
+
+# Enable online calibration of camera intrinsics
+do_calib_camera_intrinsics: false
+
+# Enable online calibration of time offset
+do_calib_camera_timeoffset: false
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
+# Save trajectory to file
+save_trajectory: true
+
+# Trajectory output path (relative to working directory)
+trajectory_path: "trajectory_openvins.txt"
+
+# Output coordinate frame: "camera" or "imu"
+output_frame: "imu"
+
+# Verbose output level (0 = minimal, 1 = normal, 2 = debug)
+verbosity: 1
