@@ -101,7 +101,6 @@ public:
      */
     float getFps() const { return currentFps_; }
 
-protected:
     /**
      * @brief Create perspective projection matrix
      * @param fov Field of view in degrees
@@ -120,6 +119,8 @@ protected:
     static Eigen::Matrix4f createLookAt(const Eigen::Vector3f& eye,
                                         const Eigen::Vector3f& center,
                                         const Eigen::Vector3f& up);
+
+protected:
 
 private:
     // OpenGL window handle (using void* to avoid exposing GLFW in header)
