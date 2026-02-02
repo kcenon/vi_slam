@@ -298,9 +298,43 @@ In RViz, add displays:
 
 ## Supported SLAM Frameworks
 
-- VINS-Mono
-- ORB-SLAM3 (planned)
-- Basalt (planned)
+| Framework | Status | Config File | Description |
+|-----------|--------|-------------|-------------|
+| VINS-Mono | Supported | `config/vins_mono.yaml` | Monocular visual-inertial SLAM |
+| OpenVINS | Supported | `config/openvins.yaml` | Open-source VIO with MSCKF |
+| ORB-SLAM3 | In Progress | `config/orbslam3.yaml` | Feature-based visual SLAM |
+| Basalt | In Progress | `config/basalt.yaml` | Optical flow based VIO |
+
+### Configuration Files
+
+Each SLAM framework has its own configuration file in the `config/` directory:
+
+- **`config/vins_mono.yaml`** - VINS-Mono parameters including camera intrinsics, IMU noise, and feature tracking settings
+- **`config/openvins.yaml`** - OpenVINS MSCKF parameters and state estimation settings
+- **`config/orbslam3.yaml`** - ORB-SLAM3 settings including ORB feature parameters and vocabulary path
+- **`config/basalt.yaml`** - Basalt VIO optical flow and solver parameters
+
+Example configuration usage:
+
+```yaml
+# config/pc_client_config.yaml
+slam:
+  type: "openvins"  # or "vins_mono", "orbslam3", "basalt"
+  config_file: "config/openvins.yaml"
+```
+
+### Vocabulary Files
+
+ORB-SLAM3 and VINS-Mono require vocabulary files for loop closure. These are not included in the repository due to their size. See `vocab/README.md` for download instructions.
+
+```bash
+# Download vocabulary files
+./scripts/download_vocab.sh
+
+# Or manually download ORB vocabulary
+wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
+tar -xzf ORBvoc.txt.tar.gz -C vocab/
+```
 
 ## Documentation
 

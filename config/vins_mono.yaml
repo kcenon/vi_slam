@@ -1,0 +1,167 @@
+# VINS-Mono Configuration File
+# This configuration file follows VINS-Mono YAML format conventions
+# Reference: https://github.com/HKUST-Aerial-Robotics/VINS-Mono
+
+# =============================================================================
+# General Settings
+# =============================================================================
+
+# Model type: PINHOLE or MEI (omni-directional)
+model_type: PINHOLE
+
+# Camera topic for ROS integration
+image_topic: "/cam0/image_raw"
+
+# IMU topic for ROS integration
+imu_topic: "/imu0"
+
+# Output path for results
+output_path: "/tmp/vins_output/"
+
+# =============================================================================
+# Camera Intrinsics (Example - EuRoC MAV dataset)
+# =============================================================================
+
+# Camera intrinsics
+camera.fx: 458.654
+camera.fy: 457.296
+camera.cx: 367.215
+camera.cy: 248.375
+
+# Distortion coefficients [k1, k2, p1, p2]
+camera.k1: -0.28340811
+camera.k2: 0.07395907
+camera.p1: 0.00019359
+camera.p2: 1.76187114e-05
+
+# Image size
+image_width: 752
+image_height: 480
+
+# =============================================================================
+# IMU Parameters
+# =============================================================================
+
+# IMU sampling rate (Hz)
+imu_rate: 200
+
+# Accelerometer noise density (m/s^2/sqrt(Hz))
+acc_n: 0.08
+
+# Gyroscope noise density (rad/s/sqrt(Hz))
+gyr_n: 0.004
+
+# Accelerometer bias random walk (m/s^3/sqrt(Hz))
+acc_w: 4.0e-05
+
+# Gyroscope bias random walk (rad/s^2/sqrt(Hz))
+gyr_w: 2.0e-06
+
+# Gravity magnitude (m/s^2)
+g_norm: 9.81007
+
+# =============================================================================
+# Camera-IMU Extrinsics
+# =============================================================================
+
+# Transformation from camera to IMU body frame (T_imu_cam)
+# Rotation matrix (row-major)
+extrinsicRotation: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: d
+  data: [ 0.0148655429818, -0.999880929698, 0.00414029679422,
+          0.999557249008, 0.0149672133247, 0.025715529948,
+         -0.0257744366974, 0.00375618835797, 0.999660727178 ]
+
+# Translation vector
+extrinsicTranslation: !!opencv-matrix
+  rows: 3
+  cols: 1
+  dt: d
+  data: [ 0.0652229934167, -0.0207055214469, -0.00808170117104 ]
+
+# Time offset between camera and IMU (td = t_imu - t_cam)
+td: 0.0
+
+# =============================================================================
+# Feature Tracking Parameters
+# =============================================================================
+
+# Maximum number of features to track
+max_cnt: 150
+
+# Minimum distance between features (pixels)
+min_dist: 30
+
+# Feature frequency (Hz) - set to 0 for auto
+freq: 10
+
+# FAST corner detection threshold
+F_threshold: 1.0
+
+# Enable histogram equalization
+equalize: 1
+
+# Enable fisheye mask
+fisheye: 0
+
+# =============================================================================
+# Optimization Parameters
+# =============================================================================
+
+# Maximum iterations for non-linear optimization
+max_solver_time: 0.04
+max_num_iterations: 8
+
+# Keyframe selection threshold
+keyframe_parallax: 10.0
+
+# Minimum parallax for triangulation (pixels)
+min_parallax: 10.0
+
+# =============================================================================
+# Sliding Window Parameters
+# =============================================================================
+
+# Size of the sliding window
+window_size: 10
+
+# Number of features per optimization
+num_of_cam: 1
+
+# =============================================================================
+# Loop Closure Parameters
+# =============================================================================
+
+# Enable loop closure
+loop_closure: 0
+
+# Vocabulary file path (relative to config directory)
+voc_file: "../vocab/brief_k10L6.bin"
+
+# Pose graph path
+pose_graph_save_path: "/tmp/vins_pose_graph/"
+
+# Minimum loop feature count
+min_loop_num: 25
+
+# =============================================================================
+# Advanced Parameters
+# =============================================================================
+
+# Estimate extrinsic between camera and IMU online
+estimate_extrinsic: 0
+
+# Estimate time offset online
+estimate_td: 0
+
+# Rolling shutter time (set to 0 for global shutter)
+rolling_shutter: 0
+rolling_shutter_tr: 0.0
+
+# Enable multi-threading
+use_multi_threading: 1
+
+# Verbose output level (0 = quiet, 1 = normal, 2 = debug)
+verbose: 1

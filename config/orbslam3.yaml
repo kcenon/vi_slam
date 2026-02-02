@@ -1,0 +1,161 @@
+# ORB-SLAM3 Configuration File
+# This configuration file follows ORB-SLAM3 YAML format conventions
+# Reference: https://github.com/UZ-SLAMLab/ORB_SLAM3
+
+%YAML:1.0
+
+# =============================================================================
+# General Settings
+# =============================================================================
+
+# Path to ORB vocabulary file
+Vocabulary: "../vocab/ORBvoc.txt"
+
+# Camera model: "PinHole" or "Rectified" or "KannalaBrandt8"
+Camera.type: "PinHole"
+
+# Sensor type: "Monocular-Inertial", "Stereo-Inertial", "Monocular", "Stereo", "RGB-D"
+sensor_type: "Monocular-Inertial"
+
+# =============================================================================
+# Camera Intrinsics (Example - EuRoC MAV dataset)
+# =============================================================================
+
+# Camera intrinsics
+Camera.fx: 458.654
+Camera.fy: 457.296
+Camera.cx: 367.215
+Camera.cy: 248.375
+
+# Distortion coefficients (RadTan model)
+Camera.k1: -0.28340811
+Camera.k2: 0.07395907
+Camera.p1: 0.00019359
+Camera.p2: 1.76187114e-05
+Camera.k3: 0.0
+
+# Image size
+Camera.width: 752
+Camera.height: 480
+
+# Camera fps (0 = auto-detect)
+Camera.fps: 20.0
+
+# Color order: 0 = BGR, 1 = RGB
+Camera.RGB: 1
+
+# Stereo baseline times fx (for stereo cameras only)
+Camera.bf: 47.90639384423901
+
+# Close/Far threshold for stereo (meters)
+ThDepth: 40.0
+
+# Depth map factor (for RGB-D cameras only)
+DepthMapFactor: 1.0
+
+# =============================================================================
+# Camera-IMU Extrinsics (T_bc: Camera to Body/IMU transformation)
+# =============================================================================
+
+# Transformation from body (IMU) to camera
+Tbc: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0.0148655429818, -0.999880929698, 0.00414029679422, 0.0652229934167,
+          0.999557249008, 0.0149672133247, 0.025715529948, -0.0207055214469,
+         -0.0257744366974, 0.00375618835797, 0.999660727178, -0.00808170117104,
+          0.0, 0.0, 0.0, 1.0 ]
+
+# =============================================================================
+# IMU Parameters
+# =============================================================================
+
+# IMU frequency (Hz)
+IMU.Frequency: 200
+
+# IMU noise parameters
+# Gyroscope noise density (rad/s/sqrt(Hz))
+IMU.NoiseGyro: 0.004
+# Accelerometer noise density (m/s^2/sqrt(Hz))
+IMU.NoiseAcc: 0.08
+# Gyroscope bias random walk (rad/s^2/sqrt(Hz))
+IMU.GyroWalk: 2.0e-05
+# Accelerometer bias random walk (m/s^3/sqrt(Hz))
+IMU.AccWalk: 4.0e-04
+
+# IMU-Camera time offset (seconds)
+IMU.TimeOffset: 0.0
+
+# Insert KF when time difference > this threshold (seconds)
+IMU.InsertKFsWhenLost: 1
+
+# =============================================================================
+# ORB Feature Parameters
+# =============================================================================
+
+# Number of ORB features per image
+ORBextractor.nFeatures: 1200
+
+# Scale factor between levels in the image pyramid
+ORBextractor.scaleFactor: 1.2
+
+# Number of pyramid levels
+ORBextractor.nLevels: 8
+
+# FAST detector threshold (initial)
+ORBextractor.iniThFAST: 20
+
+# FAST detector threshold (minimum)
+ORBextractor.minThFAST: 7
+
+# =============================================================================
+# Viewer Settings
+# =============================================================================
+
+# Keyframe size in viewer
+Viewer.KeyFrameSize: 0.05
+
+# Keyframe line width in viewer
+Viewer.KeyFrameLineWidth: 1
+
+# Graph line width in viewer
+Viewer.GraphLineWidth: 0.9
+
+# Point size in viewer
+Viewer.PointSize: 2
+
+# Camera size in viewer
+Viewer.CameraSize: 0.08
+
+# Camera line width in viewer
+Viewer.CameraLineWidth: 3
+
+# Viewer viewport width
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500
+
+# =============================================================================
+# System Flags
+# =============================================================================
+
+# Use viewer
+System.UseViewer: 1
+
+# Save trajectory
+System.SaveTrajectory: 1
+
+# Trajectory output path
+System.TrajectoryFile: "trajectory_orbslam3.txt"
+
+# =============================================================================
+# Atlas Parameters (for multi-map support)
+# =============================================================================
+
+# Active maps limit
+System.nMaxMaps: 5
+
+# Local window size
+System.LocalWindow: 10
