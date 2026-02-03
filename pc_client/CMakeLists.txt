@@ -21,12 +21,13 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Ceres QUIET)
 find_package(glfw3 QUIET)
 
-# Fetch Dear ImGui
+# Fetch Dear ImGui with pinned URL and hash for reproducible builds
 include(FetchContent)
 FetchContent_Declare(
     imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui.git
-    GIT_TAG v1.90.1
+    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.90.1.tar.gz
+    URL_HASH SHA256=21dcc985bb2ae8fe48047c86135dbc438d6980a8f2e08babbda5be820592f282
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable(imgui)
 
