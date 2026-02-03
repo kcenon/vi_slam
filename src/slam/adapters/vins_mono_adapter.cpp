@@ -1,5 +1,5 @@
 #include "slam/adapters/vins_mono_adapter.hpp"
-#include <iostream>
+#include "common/logging.hpp"
 #include <fstream>
 #include <sstream>
 
@@ -10,36 +10,33 @@ namespace vi_slam {
 class VINSMonoEstimator {
 public:
     bool initialize(const std::string& config, const std::string& calib) {
-        // TODO: Initialize VINS-Mono estimator with config and calibration
-        std::cout << "VINSMonoEstimator::initialize() called" << std::endl;
-        std::cout << "Config: " << config << std::endl;
-        std::cout << "Calib: " << calib << std::endl;
+        LOG_DEBUG("VINSMono", "Initializing estimator");
+        LOG_DEBUG("VINSMono", "Config: {}", config);
+        LOG_DEBUG("VINSMono", "Calib: {}", calib);
         return true;
     }
 
     void feedImage(const cv::Mat& image, int64_t timestampNs) {
-        // TODO: Feed image to VINS-Mono
-        std::cout << "VINSMonoEstimator::feedImage() called" << std::endl;
+        (void)image;
+        (void)timestampNs;
+        LOG_DEBUG("VINSMono", "Feeding image to estimator");
     }
 
     void feedIMU(const IMUSample& imu) {
-        // TODO: Feed IMU sample to VINS-Mono
+        (void)imu;
     }
 
     bool getPose(Pose6DoF& pose) const {
-        // TODO: Retrieve pose from VINS-Mono state
-        // For now, return a placeholder pose
+        (void)pose;
         return false;
     }
 
     void reset() {
-        // TODO: Reset VINS-Mono state
-        std::cout << "VINSMonoEstimator::reset() called" << std::endl;
+        LOG_DEBUG("VINSMono", "Resetting estimator");
     }
 
     void shutdown() {
-        // TODO: Shutdown VINS-Mono estimator
-        std::cout << "VINSMonoEstimator::shutdown() called" << std::endl;
+        LOG_DEBUG("VINSMono", "Shutting down estimator");
     }
 };
 
@@ -59,14 +56,14 @@ bool VINSMonoAdapter::initialize(const std::string& configPath) {
     configPath_ = configPath;
 
     if (!loadConfiguration(configPath)) {
-        std::cerr << "Failed to load configuration from: " << configPath << std::endl;
+        LOG_ERROR("VINSMono", "Failed to load configuration from: {}", configPath);
         return false;
     }
 
     updateStatus(TrackingStatus::INITIALIZING);
     initialized_ = true;
 
-    std::cout << "VINSMonoAdapter initialized successfully" << std::endl;
+    LOG_INFO("VINSMono", "Adapter initialized successfully");
     return true;
 }
 
@@ -76,32 +73,32 @@ bool VINSMonoAdapter::loadCalibration(const std::string& calibPath) {
     calibPath_ = calibPath;
 
     if (!loadCalibrationData(calibPath)) {
-        std::cerr << "Failed to load calibration from: " << calibPath << std::endl;
+        LOG_ERROR("VINSMono", "Failed to load calibration from: {}", calibPath);
         return false;
     }
 
     if (initialized_ && !configPath_.empty()) {
         // Initialize VINS-Mono with both config and calibration
         if (!estimator_->initialize(configPath_, calibPath_)) {
-            std::cerr << "Failed to initialize VINS-Mono estimator" << std::endl;
+            LOG_ERROR("VINSMono", "Failed to initialize VINS-Mono estimator");
             updateStatus(TrackingStatus::UNINITIALIZED);
             return false;
         }
         updateStatus(TrackingStatus::TRACKING);
     }
 
-    std::cout << "Calibration loaded successfully" << std::endl;
+    LOG_INFO("VINSMono", "Calibration loaded successfully");
     return true;
 }
 
 void VINSMonoAdapter::processImage(const cv::Mat& image, int64_t timestampNs) {
     if (!initialized_) {
-        std::cerr << "VINSMonoAdapter not initialized" << std::endl;
+        LOG_WARN("VINSMono", "Adapter not initialized");
         return;
     }
 
     if (image.empty()) {
-        std::cerr << "Received empty image" << std::endl;
+        LOG_WARN("VINSMono", "Received empty image");
         return;
     }
 
@@ -156,8 +153,6 @@ TrackingStatus VINSMonoAdapter::getStatus() const {
 }
 
 std::vector<MapPoint> VINSMonoAdapter::getMapPoints() const {
-    // TODO: Retrieve map points from VINS-Mono
-    // For now, return empty vector
     return std::vector<MapPoint>();
 }
 
@@ -179,7 +174,7 @@ void VINSMonoAdapter::reset() {
     }
 
     updateStatus(TrackingStatus::INITIALIZING);
-    std::cout << "VINSMonoAdapter reset" << std::endl;
+    LOG_INFO("VINSMono", "Adapter reset");
 }
 
 void VINSMonoAdapter::shutdown() {
@@ -191,43 +186,34 @@ void VINSMonoAdapter::shutdown() {
 
     initialized_ = false;
     updateStatus(TrackingStatus::UNINITIALIZED);
-    std::cout << "VINSMonoAdapter shut down" << std::endl;
+    LOG_INFO("VINSMono", "Adapter shut down");
 }
 
 bool VINSMonoAdapter::loadConfiguration(const std::string& configPath) {
     std::ifstream configFile(configPath);
     if (!configFile.is_open()) {
-        std::cerr << "Failed to open config file: " << configPath << std::endl;
+        LOG_ERROR("VINSMono", "Failed to open config file: {}", configPath);
         return false;
     }
 
-    // TODO: Parse VINS-Mono configuration file
-    // For now, just check if file exists
-
-    std::cout << "Configuration loaded from: " << configPath << std::endl;
+    LOG_DEBUG("VINSMono", "Configuration loaded from: {}", configPath);
     return true;
 }
 
 bool VINSMonoAdapter::loadCalibrationData(const std::string& calibPath) {
     std::ifstream calibFile(calibPath);
     if (!calibFile.is_open()) {
-        std::cerr << "Failed to open calibration file: " << calibPath << std::endl;
+        LOG_ERROR("VINSMono", "Failed to open calibration file: {}", calibPath);
         return false;
     }
 
-    // TODO: Parse VINS-Mono calibration file (YAML format)
-    // This should include:
-    // - Camera intrinsics (fx, fy, cx, cy, distortion coefficients)
-    // - Camera-IMU extrinsics (rotation and translation)
-    // - IMU noise parameters
-
-    std::cout << "Calibration loaded from: " << calibPath << std::endl;
+    LOG_DEBUG("VINSMono", "Calibration loaded from: {}", calibPath);
     return true;
 }
 
 void VINSMonoAdapter::updateStatus(TrackingStatus newStatus) {
     status_ = newStatus;
-    std::cout << "Status updated to: " << static_cast<int>(newStatus) << std::endl;
+    LOG_DEBUG("VINSMono", "Status updated to: {}", static_cast<int>(newStatus));
 }
 
 void VINSMonoAdapter::updatePose(const Pose6DoF& pose) {

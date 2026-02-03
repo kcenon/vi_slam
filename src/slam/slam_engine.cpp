@@ -1,6 +1,6 @@
 #include "slam/slam_engine.hpp"
+#include "common/logging.hpp"
 #include "slam/adapters/vins_mono_adapter.hpp"
-#include <iostream>
 #include <stdexcept>
 
 namespace vi_slam {
@@ -11,12 +11,12 @@ SLAMEngine::SLAMEngine()
       poseCallback_(nullptr),
       statusCallback_(nullptr),
       initialized_(false) {
-    std::cout << "SLAMEngine created" << std::endl;
+    LOG_INFO("SLAMEngine", "SLAMEngine created");
 }
 
 SLAMEngine::~SLAMEngine() {
     shutdown();
-    std::cout << "SLAMEngine destroyed" << std::endl;
+    LOG_INFO("SLAMEngine", "SLAMEngine destroyed");
 }
 
 bool SLAMEngine::selectFramework(SLAMFrameworkType type) {
@@ -24,7 +24,7 @@ bool SLAMEngine::selectFramework(SLAMFrameworkType type) {
 
     // If already using this framework, no need to switch
     if (framework_ && currentType_ == type) {
-        std::cout << "Already using selected framework" << std::endl;
+        LOG_DEBUG("SLAMEngine", "Already using selected framework");
         return true;
     }
 
@@ -36,14 +36,14 @@ bool SLAMEngine::selectFramework(SLAMFrameworkType type) {
     // Create new framework
     framework_ = createFramework(type);
     if (!framework_) {
-        std::cerr << "Failed to create framework" << std::endl;
+        LOG_ERROR("SLAMEngine", "Failed to create framework");
         return false;
     }
 
     currentType_ = type;
     initialized_ = false;
 
-    std::cout << "Framework selected: " << static_cast<int>(type) << std::endl;
+    LOG_INFO("SLAMEngine", "Framework selected: {}", static_cast<int>(type));
     return true;
 }
 
@@ -59,18 +59,18 @@ bool SLAMEngine::initialize(const std::string& configPath) {
         // Auto-select default framework if none selected
         framework_ = createFramework(currentType_);
         if (!framework_) {
-            std::cerr << "Failed to create default framework" << std::endl;
+            LOG_ERROR("SLAMEngine", "Failed to create default framework");
             return false;
         }
     }
 
     if (!framework_->initialize(configPath)) {
-        std::cerr << "Framework initialization failed" << std::endl;
+        LOG_ERROR("SLAMEngine", "Framework initialization failed");
         return false;
     }
 
     initialized_ = true;
-    std::cout << "SLAMEngine initialized successfully" << std::endl;
+    LOG_INFO("SLAMEngine", "SLAMEngine initialized successfully");
     return true;
 }
 
@@ -78,16 +78,16 @@ bool SLAMEngine::loadCalibration(const std::string& calibPath) {
     std::lock_guard<std::mutex> lock(frameworkMutex_);
 
     if (!framework_) {
-        std::cerr << "No framework selected" << std::endl;
+        LOG_ERROR("SLAMEngine", "No framework selected");
         return false;
     }
 
     if (!framework_->loadCalibration(calibPath)) {
-        std::cerr << "Failed to load calibration" << std::endl;
+        LOG_ERROR("SLAMEngine", "Failed to load calibration");
         return false;
     }
 
-    std::cout << "Calibration loaded successfully" << std::endl;
+    LOG_INFO("SLAMEngine", "Calibration loaded successfully");
     return true;
 }
 
@@ -95,12 +95,12 @@ void SLAMEngine::processImage(const cv::Mat& image, int64_t timestampNs) {
     std::lock_guard<std::mutex> lock(frameworkMutex_);
 
     if (!framework_) {
-        std::cerr << "No framework available for image processing" << std::endl;
+        LOG_ERROR("SLAMEngine", "No framework available for image processing");
         return;
     }
 
     if (!initialized_) {
-        std::cerr << "Framework not initialized" << std::endl;
+        LOG_WARN("SLAMEngine", "Framework not initialized");
         return;
     }
 
@@ -122,7 +122,7 @@ void SLAMEngine::processIMU(const IMUSample& imu) {
     std::lock_guard<std::mutex> lock(frameworkMutex_);
 
     if (!framework_) {
-        std::cerr << "No framework available for IMU processing" << std::endl;
+        LOG_ERROR("SLAMEngine", "No framework available for IMU processing");
         return;
     }
 
@@ -137,7 +137,7 @@ bool SLAMEngine::getPose(Pose6DoF& pose) const {
     std::lock_guard<std::mutex> lock(frameworkMutex_);
 
     if (!framework_) {
-        std::cerr << "No framework available" << std::endl;
+        LOG_ERROR("SLAMEngine", "No framework available");
         return false;
     }
 
@@ -168,14 +168,14 @@ void SLAMEngine::reset() {
     std::lock_guard<std::mutex> lock(frameworkMutex_);
 
     if (!framework_) {
-        std::cerr << "No framework to reset" << std::endl;
+        LOG_WARN("SLAMEngine", "No framework to reset");
         return;
     }
 
     framework_->reset();
     invokeStatusCallback(TrackingStatus::INITIALIZING);
 
-    std::cout << "SLAMEngine reset" << std::endl;
+    LOG_INFO("SLAMEngine", "SLAMEngine reset");
 }
 
 void SLAMEngine::shutdown() {
@@ -189,44 +189,41 @@ void SLAMEngine::shutdown() {
     initialized_ = false;
     invokeStatusCallback(TrackingStatus::UNINITIALIZED);
 
-    std::cout << "SLAMEngine shut down" << std::endl;
+    LOG_INFO("SLAMEngine", "SLAMEngine shut down");
 }
 
 void SLAMEngine::setPoseCallback(PoseCallback callback) {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     poseCallback_ = callback;
-    std::cout << "Pose callback set" << std::endl;
+    LOG_DEBUG("SLAMEngine", "Pose callback set");
 }
 
 void SLAMEngine::setStatusCallback(StatusCallback callback) {
     std::lock_guard<std::mutex> lock(callbackMutex_);
     statusCallback_ = callback;
-    std::cout << "Status callback set" << std::endl;
+    LOG_DEBUG("SLAMEngine", "Status callback set");
 }
 
 std::unique_ptr<ISLAMFramework> SLAMEngine::createFramework(SLAMFrameworkType type) {
     switch (type) {
         case SLAMFrameworkType::VINS_MONO:
-            std::cout << "Creating VINS-Mono adapter" << std::endl;
+            LOG_INFO("SLAMEngine", "Creating VINS-Mono adapter");
             return std::make_unique<VINSMonoAdapter>();
 
         case SLAMFrameworkType::OPENVINS:
-            // TODO: Implement OpenVINS adapter
-            std::cerr << "OpenVINS adapter not yet implemented" << std::endl;
+            LOG_WARN("SLAMEngine", "OpenVINS adapter not yet implemented");
             return nullptr;
 
         case SLAMFrameworkType::ORB_SLAM3:
-            // TODO: Implement ORB-SLAM3 adapter
-            std::cerr << "ORB-SLAM3 adapter not yet implemented" << std::endl;
+            LOG_WARN("SLAMEngine", "ORB-SLAM3 adapter not yet implemented");
             return nullptr;
 
         case SLAMFrameworkType::BASALT:
-            // TODO: Implement Basalt adapter
-            std::cerr << "Basalt adapter not yet implemented" << std::endl;
+            LOG_WARN("SLAMEngine", "Basalt adapter not yet implemented");
             return nullptr;
 
         default:
-            std::cerr << "Unknown framework type" << std::endl;
+            LOG_ERROR("SLAMEngine", "Unknown framework type");
             return nullptr;
     }
 }
@@ -267,24 +264,24 @@ void SLAMEngine::enableROSPublisher(ros::NodeHandle& nodeHandle,
     std::lock_guard<std::mutex> lock(callbackMutex_);
 
     if (rosPublisher_) {
-        std::cerr << "ROS publisher already enabled" << std::endl;
+        LOG_WARN("SLAMEngine", "ROS publisher already enabled");
         return;
     }
 
     rosPublisher_ = std::make_unique<output::ROSPublisher>(nodeHandle, config);
-    std::cout << "ROS publisher enabled" << std::endl;
+    LOG_INFO("SLAMEngine", "ROS publisher enabled");
 }
 
 void SLAMEngine::disableROSPublisher() {
     std::lock_guard<std::mutex> lock(callbackMutex_);
 
     if (!rosPublisher_) {
-        std::cerr << "ROS publisher not enabled" << std::endl;
+        LOG_WARN("SLAMEngine", "ROS publisher not enabled");
         return;
     }
 
     rosPublisher_.reset();
-    std::cout << "ROS publisher disabled" << std::endl;
+    LOG_INFO("SLAMEngine", "ROS publisher disabled");
 }
 
 bool SLAMEngine::isROSPublisherEnabled() const {
@@ -298,24 +295,24 @@ void SLAMEngine::enableZMQPublisher(const output::ZMQPublisherConfig& config) {
     std::lock_guard<std::mutex> lock(callbackMutex_);
 
     if (zmqPublisher_) {
-        std::cerr << "ZMQ publisher already enabled" << std::endl;
+        LOG_WARN("SLAMEngine", "ZMQ publisher already enabled");
         return;
     }
 
     zmqPublisher_ = std::make_unique<output::ZMQPublisher>(config);
-    std::cout << "ZMQ publisher enabled on " << config.endpoint << std::endl;
+    LOG_INFO("SLAMEngine", "ZMQ publisher enabled on {}", config.endpoint);
 }
 
 void SLAMEngine::disableZMQPublisher() {
     std::lock_guard<std::mutex> lock(callbackMutex_);
 
     if (!zmqPublisher_) {
-        std::cerr << "ZMQ publisher not enabled" << std::endl;
+        LOG_WARN("SLAMEngine", "ZMQ publisher not enabled");
         return;
     }
 
     zmqPublisher_.reset();
-    std::cout << "ZMQ publisher disabled" << std::endl;
+    LOG_INFO("SLAMEngine", "ZMQ publisher disabled");
 }
 
 bool SLAMEngine::isZMQPublisherEnabled() const {

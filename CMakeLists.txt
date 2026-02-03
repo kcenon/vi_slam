@@ -91,6 +91,7 @@ endif()
 
 # Source files
 set(COMMON_SOURCES
+    src/common/logging.cpp
     src/slam/slam_engine.cpp
     src/slam/adapters/vins_mono_adapter.cpp
     src/slam/adapters/openvins_adapter.cpp
