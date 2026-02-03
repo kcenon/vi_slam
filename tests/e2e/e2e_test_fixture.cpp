@@ -219,14 +219,10 @@ IMUSample E2ETestFixture::generateTestIMU(int64_t timestampNs) {
     imu.timestampNs = timestampNs;
 
     // Simulate stationary device with gravity
-    imu.accX = 0.0;
-    imu.accY = 0.0;
-    imu.accZ = 9.81;  // Gravity in z-axis
+    imu.acceleration = Eigen::Vector3d(0.0, 0.0, 9.81);  // Gravity in z-axis
 
     // No rotation
-    imu.gyroX = 0.0;
-    imu.gyroY = 0.0;
-    imu.gyroZ = 0.0;
+    imu.angularVelocity = Eigen::Vector3d::Zero();
 
     return imu;
 }

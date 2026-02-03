@@ -26,12 +26,12 @@ bool PointCloudExporter::exportPLY(const std::string& filepath,
 
     // Write vertex data
     for (const auto& point : points) {
-        file << point.position[0] << " "
-             << point.position[1] << " "
-             << point.position[2] << " "
-             << static_cast<int>(point.color[0]) << " "
-             << static_cast<int>(point.color[1]) << " "
-             << static_cast<int>(point.color[2]) << "\n";
+        file << point.position.x() << " "
+             << point.position.y() << " "
+             << point.position.z() << " "
+             << static_cast<int>(point.color(0)) << " "
+             << static_cast<int>(point.color(1)) << " "
+             << static_cast<int>(point.color(2)) << "\n";
     }
 
     file.close();
@@ -62,18 +62,21 @@ bool PointCloudExporter::exportPLYBinary(const std::string& filepath,
     // Write vertex data (binary)
     for (const auto& point : points) {
         // Write position as floats (x, y, z)
-        float x = static_cast<float>(point.position[0]);
-        float y = static_cast<float>(point.position[1]);
-        float z = static_cast<float>(point.position[2]);
+        float x = static_cast<float>(point.position.x());
+        float y = static_cast<float>(point.position.y());
+        float z = static_cast<float>(point.position.z());
 
         file.write(reinterpret_cast<const char*>(&x), sizeof(float));
         file.write(reinterpret_cast<const char*>(&y), sizeof(float));
         file.write(reinterpret_cast<const char*>(&z), sizeof(float));
 
         // Write color as unsigned chars (r, g, b)
-        file.write(reinterpret_cast<const char*>(&point.color[0]), sizeof(uint8_t));
-        file.write(reinterpret_cast<const char*>(&point.color[1]), sizeof(uint8_t));
-        file.write(reinterpret_cast<const char*>(&point.color[2]), sizeof(uint8_t));
+        uint8_t r = point.color(0);
+        uint8_t g = point.color(1);
+        uint8_t b = point.color(2);
+        file.write(reinterpret_cast<const char*>(&r), sizeof(uint8_t));
+        file.write(reinterpret_cast<const char*>(&g), sizeof(uint8_t));
+        file.write(reinterpret_cast<const char*>(&b), sizeof(uint8_t));
     }
 
     file.close();

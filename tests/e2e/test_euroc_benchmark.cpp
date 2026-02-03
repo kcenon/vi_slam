@@ -5,6 +5,8 @@
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 using namespace vi_slam;
 using namespace vi_slam::testing;
@@ -56,13 +58,8 @@ bool loadGroundTruth(const std::string& filePath, std::vector<vi_slam::Pose6DoF>
 
         vi_slam::Pose6DoF pose;
         pose.timestampNs = timestamp;
-        pose.position[0] = tx;
-        pose.position[1] = ty;
-        pose.position[2] = tz;
-        pose.orientation[0] = qw;
-        pose.orientation[1] = qx;
-        pose.orientation[2] = qy;
-        pose.orientation[3] = qz;
+        pose.position = Eigen::Vector3d(tx, ty, tz);
+        pose.orientation = Eigen::Quaterniond(qw, qx, qy, qz);
         pose.valid = true;
 
         poses.push_back(pose);

@@ -11,13 +11,8 @@ TFPublisher::TFPublisher(const TFPublisherConfig& config)
 
     // Initialize map → odom transform as identity
     mapToOdom_.timestampNs = 0;
-    mapToOdom_.position[0] = 0.0;
-    mapToOdom_.position[1] = 0.0;
-    mapToOdom_.position[2] = 0.0;
-    mapToOdom_.orientation[0] = 1.0;  // qw
-    mapToOdom_.orientation[1] = 0.0;  // qx
-    mapToOdom_.orientation[2] = 0.0;  // qy
-    mapToOdom_.orientation[3] = 0.0;  // qz
+    mapToOdom_.position = Eigen::Vector3d::Zero();
+    mapToOdom_.orientation = Eigen::Quaterniond::Identity();
     mapToOdom_.valid = true;
 }
 
@@ -95,15 +90,15 @@ geometry_msgs::TransformStamped TFPublisher::createTransform(
     transform.child_frame_id = childFrameId;
 
     // Translation
-    transform.transform.translation.x = pose.position[0];
-    transform.transform.translation.y = pose.position[1];
-    transform.transform.translation.z = pose.position[2];
+    transform.transform.translation.x = pose.position.x();
+    transform.transform.translation.y = pose.position.y();
+    transform.transform.translation.z = pose.position.z();
 
-    // Rotation (qw, qx, qy, qz → x, y, z, w)
-    transform.transform.rotation.x = pose.orientation[1];
-    transform.transform.rotation.y = pose.orientation[2];
-    transform.transform.rotation.z = pose.orientation[3];
-    transform.transform.rotation.w = pose.orientation[0];
+    // Rotation
+    transform.transform.rotation.x = pose.orientation.x();
+    transform.transform.rotation.y = pose.orientation.y();
+    transform.transform.rotation.z = pose.orientation.z();
+    transform.transform.rotation.w = pose.orientation.w();
 
     return transform;
 }

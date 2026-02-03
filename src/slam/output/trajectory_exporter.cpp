@@ -1,7 +1,8 @@
 #include "slam/output/trajectory_exporter.hpp"
 #include <fstream>
 #include <iomanip>
-#include <cmath>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 namespace vi_slam {
 namespace output {
@@ -25,15 +26,15 @@ bool TrajectoryExporter::exportTUM(const std::string& filepath,
         double timestamp = pose.timestampNs / 1e9;
 
         // TUM format: timestamp tx ty tz qx qy qz qw
-        // Note: Our quaternion is [qw, qx, qy, qz], TUM expects [qx, qy, qz, qw]
+        // Eigen::Quaterniond stores as [x, y, z, w] internally but accesses via .x(), .y(), .z(), .w()
         file << timestamp << " "
-             << pose.position[0] << " "
-             << pose.position[1] << " "
-             << pose.position[2] << " "
-             << pose.orientation[1] << " "  // qx
-             << pose.orientation[2] << " "  // qy
-             << pose.orientation[3] << " "  // qz
-             << pose.orientation[0]         // qw
+             << pose.position.x() << " "
+             << pose.position.y() << " "
+             << pose.position.z() << " "
+             << pose.orientation.x() << " "  // qx
+             << pose.orientation.y() << " "  // qy
+             << pose.orientation.z() << " "  // qz
+             << pose.orientation.w()         // qw
              << "\n";
     }
 
@@ -56,19 +57,14 @@ bool TrajectoryExporter::exportKITTI(const std::string& filepath,
             continue;  // Skip invalid poses
         }
 
-        // Convert quaternion to rotation matrix
-        double R[9];
-        quaternionToRotationMatrix(pose.orientation[0],  // qw
-                                  pose.orientation[1],  // qx
-                                  pose.orientation[2],  // qy
-                                  pose.orientation[3],  // qz
-                                  R);
+        // Convert quaternion to rotation matrix using Eigen
+        Eigen::Matrix3d R = pose.orientation.normalized().toRotationMatrix();
 
         // KITTI format: r11 r12 r13 tx r21 r22 r23 ty r31 r32 r33 tz
         // 3x4 transformation matrix [R|t] in row-major order
-        file << R[0] << " " << R[1] << " " << R[2] << " " << pose.position[0] << " "
-             << R[3] << " " << R[4] << " " << R[5] << " " << pose.position[1] << " "
-             << R[6] << " " << R[7] << " " << R[8] << " " << pose.position[2]
+        file << R(0,0) << " " << R(0,1) << " " << R(0,2) << " " << pose.position.x() << " "
+             << R(1,0) << " " << R(1,1) << " " << R(1,2) << " " << pose.position.y() << " "
+             << R(2,0) << " " << R(2,1) << " " << R(2,2) << " " << pose.position.z()
              << "\n";
     }
 
