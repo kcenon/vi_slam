@@ -7,6 +7,7 @@
 #include <numeric>
 #include <sstream>
 #include <iomanip>
+#include <Eigen/Core>
 
 using json = nlohmann::json;
 
@@ -87,15 +88,15 @@ std::string ZMQPublisher::toJSON(const Pose6DoF& pose) const {
     j["timestamp"] = pose.timestampNs / 1e9;
 
     // Pose
-    j["pose"]["position"]["x"] = pose.position[0];
-    j["pose"]["position"]["y"] = pose.position[1];
-    j["pose"]["position"]["z"] = pose.position[2];
+    j["pose"]["position"]["x"] = pose.position.x();
+    j["pose"]["position"]["y"] = pose.position.y();
+    j["pose"]["position"]["z"] = pose.position.z();
 
-    // Orientation (qw, qx, qy, qz -> x, y, z, w for ROS compatibility)
-    j["pose"]["orientation"]["x"] = pose.orientation[1];
-    j["pose"]["orientation"]["y"] = pose.orientation[2];
-    j["pose"]["orientation"]["z"] = pose.orientation[3];
-    j["pose"]["orientation"]["w"] = pose.orientation[0];
+    // Orientation
+    j["pose"]["orientation"]["x"] = pose.orientation.x();
+    j["pose"]["orientation"]["y"] = pose.orientation.y();
+    j["pose"]["orientation"]["z"] = pose.orientation.z();
+    j["pose"]["orientation"]["w"] = pose.orientation.w();
 
     // Velocity computation
     if (hasPreviousPose_) {
@@ -103,9 +104,10 @@ std::string ZMQPublisher::toJSON(const Pose6DoF& pose) const {
 
         if (dt > 0) {
             // Linear velocity
-            j["velocity"]["linear"]["x"] = (pose.position[0] - previousPose_.position[0]) / dt;
-            j["velocity"]["linear"]["y"] = (pose.position[1] - previousPose_.position[1]) / dt;
-            j["velocity"]["linear"]["z"] = (pose.position[2] - previousPose_.position[2]) / dt;
+            Eigen::Vector3d velocity = (pose.position - previousPose_.position) / dt;
+            j["velocity"]["linear"]["x"] = velocity.x();
+            j["velocity"]["linear"]["y"] = velocity.y();
+            j["velocity"]["linear"]["z"] = velocity.z();
 
             // Angular velocity computation would require quaternion differentiation
             // For simplicity, set to zero (can be enhanced later)

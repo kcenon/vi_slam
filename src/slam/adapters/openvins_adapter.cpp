@@ -156,8 +156,8 @@ public:
         // Every 100 IMU samples, log status
         if (imuCount_ % 100 == 0) {
             std::cout << "[OpenVINS] IMU samples processed: " << imuCount_
-                      << ", acc: [" << imu.accX << ", " << imu.accY << ", "
-                      << imu.accZ << "]" << std::endl;
+                      << ", acc: [" << imu.accX() << ", " << imu.accY() << ", "
+                      << imu.accZ() << "]" << std::endl;
         }
     }
 
@@ -201,19 +201,14 @@ public:
         // Simulate slight movement based on accumulated IMU
         // In real implementation, this comes from the EKF state
         static double x = 0.0, y = 0.0, z = 0.0;
-        x += lastImu_.accX * 0.00001;
-        y += lastImu_.accY * 0.00001;
-        z += lastImu_.accZ * 0.00001;
+        x += lastImu_.accX() * 0.00001;
+        y += lastImu_.accY() * 0.00001;
+        z += lastImu_.accZ() * 0.00001;
 
-        pose.position[0] = x;
-        pose.position[1] = y;
-        pose.position[2] = z;
+        pose.position = Eigen::Vector3d(x, y, z);
 
-        // Identity quaternion (w, x, y, z)
-        pose.orientation[0] = 1.0;
-        pose.orientation[1] = 0.0;
-        pose.orientation[2] = 0.0;
-        pose.orientation[3] = 0.0;
+        // Identity quaternion
+        pose.orientation = Eigen::Quaterniond::Identity();
 
         pose.valid = true;
         return true;
@@ -386,18 +381,16 @@ void OpenVINSAdapter::processIMU(const IMUSample& imu) {
     }
 
     // Validate IMU data
-    if (std::isnan(imu.accX) || std::isnan(imu.accY) || std::isnan(imu.accZ) ||
-        std::isnan(imu.gyroX) || std::isnan(imu.gyroY) || std::isnan(imu.gyroZ)) {
-        logError("Received invalid IMU data (NaN values)");
+    if (!imu.acceleration.allFinite() || !imu.angularVelocity.allFinite()) {
+        logError("Received invalid IMU data (NaN or Inf values)");
         return;
     }
 
     // Check for reasonable IMU values
     constexpr double MAX_ACC = 100.0;  // 100 m/s^2
     constexpr double MAX_GYRO = 10.0;  // 10 rad/s
-    if (std::abs(imu.accX) > MAX_ACC || std::abs(imu.accY) > MAX_ACC ||
-        std::abs(imu.accZ) > MAX_ACC || std::abs(imu.gyroX) > MAX_GYRO ||
-        std::abs(imu.gyroY) > MAX_GYRO || std::abs(imu.gyroZ) > MAX_GYRO) {
+    if (imu.acceleration.cwiseAbs().maxCoeff() > MAX_ACC ||
+        imu.angularVelocity.cwiseAbs().maxCoeff() > MAX_GYRO) {
         logError("IMU values out of reasonable range");
         return;
     }

@@ -181,8 +181,8 @@ public:
         // Every 200 IMU samples, log status
         if (config_.verbosity >= 2 && imuCount_ % 200 == 0) {
             std::cout << "[Basalt] IMU samples processed: " << imuCount_
-                      << ", gyro: [" << imu.gyroX << ", " << imu.gyroY << ", "
-                      << imu.gyroZ << "]" << std::endl;
+                      << ", gyro: [" << imu.gyroX() << ", " << imu.gyroY() << ", "
+                      << imu.gyroZ() << "]" << std::endl;
         }
     }
 
@@ -235,9 +235,9 @@ public:
 
         // Simple dead-reckoning simulation
         constexpr double dt = 0.005;  // 200 Hz IMU
-        vx += (lastImu_.accX - config_.gravity * 0.0) * dt;
-        vy += (lastImu_.accY - config_.gravity * 0.0) * dt;
-        vz += (lastImu_.accZ - config_.gravity) * dt;
+        vx += (lastImu_.accX() - config_.gravity * 0.0) * dt;
+        vy += (lastImu_.accY() - config_.gravity * 0.0) * dt;
+        vz += (lastImu_.accZ() - config_.gravity) * dt;
 
         x += vx * dt;
         y += vy * dt;
@@ -248,15 +248,10 @@ public:
         y = std::max(-100.0, std::min(100.0, y));
         z = std::max(-100.0, std::min(100.0, z));
 
-        pose.position[0] = x * 0.001;  // Scale down for realistic values
-        pose.position[1] = y * 0.001;
-        pose.position[2] = z * 0.001;
+        pose.position = Eigen::Vector3d(x * 0.001, y * 0.001, z * 0.001);
 
-        // Identity quaternion (w, x, y, z)
-        pose.orientation[0] = 1.0;
-        pose.orientation[1] = 0.0;
-        pose.orientation[2] = 0.0;
-        pose.orientation[3] = 0.0;
+        // Identity quaternion
+        pose.orientation = Eigen::Quaterniond::Identity();
 
         pose.valid = true;
         return true;
@@ -468,18 +463,16 @@ void BasaltAdapter::processIMU(const IMUSample& imu) {
     }
 
     // Validate IMU data
-    if (std::isnan(imu.accX) || std::isnan(imu.accY) || std::isnan(imu.accZ) ||
-        std::isnan(imu.gyroX) || std::isnan(imu.gyroY) || std::isnan(imu.gyroZ)) {
-        logError("Received invalid IMU data (NaN values)");
+    if (!imu.acceleration.allFinite() || !imu.angularVelocity.allFinite()) {
+        logError("Received invalid IMU data (NaN or Inf values)");
         return;
     }
 
     // Check for reasonable IMU values
     constexpr double MAX_ACC = 100.0;   // 100 m/s^2
     constexpr double MAX_GYRO = 10.0;   // 10 rad/s
-    if (std::abs(imu.accX) > MAX_ACC || std::abs(imu.accY) > MAX_ACC ||
-        std::abs(imu.accZ) > MAX_ACC || std::abs(imu.gyroX) > MAX_GYRO ||
-        std::abs(imu.gyroY) > MAX_GYRO || std::abs(imu.gyroZ) > MAX_GYRO) {
+    if (imu.acceleration.cwiseAbs().maxCoeff() > MAX_ACC ||
+        imu.angularVelocity.cwiseAbs().maxCoeff() > MAX_GYRO) {
         logError("IMU values out of reasonable range");
         return;
     }

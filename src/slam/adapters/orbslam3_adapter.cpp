@@ -211,13 +211,13 @@ public:
             MapPoint mp;
             mp.id = i;
             // Random 3D points around camera
-            mp.position[0] = (static_cast<double>(i % 10) - 5.0) * 0.5;
-            mp.position[1] = (static_cast<double>(i / 10 % 10) - 5.0) * 0.5;
-            mp.position[2] = 3.0 + static_cast<double>(i % 5) * 0.2;
+            mp.position = Eigen::Vector3d(
+                (static_cast<double>(i % 10) - 5.0) * 0.5,
+                (static_cast<double>(i / 10 % 10) - 5.0) * 0.5,
+                3.0 + static_cast<double>(i % 5) * 0.2
+            );
             mp.observations = 5 + (i % 10);
-            mp.color[0] = 128;
-            mp.color[1] = 128;
-            mp.color[2] = 128;
+            mp.color = Eigen::Matrix<uint8_t, 3, 1>::Constant(128);
             points.push_back(mp);
         }
 
@@ -398,27 +398,15 @@ void ORBSLAM3Adapter::processImage(const cv::Mat& image, int64_t timestampNs) {
         // Extract position from transformation matrix (last column)
         // Tcw is camera-to-world, need to invert for world position
         // For simplicity, use translation directly as position estimate
-        pose.position[0] = Tcw[3];
-        pose.position[1] = Tcw[7];
-        pose.position[2] = Tcw[11];
+        pose.position = Eigen::Vector3d(Tcw[3], Tcw[7], Tcw[11]);
 
         // Extract rotation as quaternion from rotation matrix
         // R = [Tcw[0:3], Tcw[4:7], Tcw[8:11]]
-        // Using simplified quaternion extraction
-        double trace = Tcw[0] + Tcw[5] + Tcw[10];
-        if (trace > 0) {
-            double s = 0.5 / std::sqrt(trace + 1.0);
-            pose.orientation[0] = 0.25 / s;  // w
-            pose.orientation[1] = (Tcw[9] - Tcw[6]) * s;  // x
-            pose.orientation[2] = (Tcw[2] - Tcw[8]) * s;  // y
-            pose.orientation[3] = (Tcw[4] - Tcw[1]) * s;  // z
-        } else {
-            // Fallback to identity quaternion
-            pose.orientation[0] = 1.0;
-            pose.orientation[1] = 0.0;
-            pose.orientation[2] = 0.0;
-            pose.orientation[3] = 0.0;
-        }
+        Eigen::Matrix3d R;
+        R << Tcw[0], Tcw[1], Tcw[2],
+             Tcw[4], Tcw[5], Tcw[6],
+             Tcw[8], Tcw[9], Tcw[10];
+        pose.orientation = Eigen::Quaterniond(R);
 
         updatePose(pose);
 
@@ -445,18 +433,16 @@ void ORBSLAM3Adapter::processIMU(const IMUSample& imu) {
     }
 
     // Validate IMU data
-    if (std::isnan(imu.accX) || std::isnan(imu.accY) || std::isnan(imu.accZ) ||
-        std::isnan(imu.gyroX) || std::isnan(imu.gyroY) || std::isnan(imu.gyroZ)) {
-        logError("Received invalid IMU data (NaN values)");
+    if (!imu.acceleration.allFinite() || !imu.angularVelocity.allFinite()) {
+        logError("Received invalid IMU data (NaN or Inf values)");
         return;
     }
 
     // Check for reasonable IMU values
     constexpr double MAX_ACC = 100.0;   // 100 m/s^2
     constexpr double MAX_GYRO = 20.0;   // 20 rad/s
-    if (std::abs(imu.accX) > MAX_ACC || std::abs(imu.accY) > MAX_ACC ||
-        std::abs(imu.accZ) > MAX_ACC || std::abs(imu.gyroX) > MAX_GYRO ||
-        std::abs(imu.gyroY) > MAX_GYRO || std::abs(imu.gyroZ) > MAX_GYRO) {
+    if (imu.acceleration.cwiseAbs().maxCoeff() > MAX_ACC ||
+        imu.angularVelocity.cwiseAbs().maxCoeff() > MAX_GYRO) {
         logError("IMU values out of reasonable range");
         return;
     }

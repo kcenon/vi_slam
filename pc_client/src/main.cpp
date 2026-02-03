@@ -198,9 +198,9 @@ int main(int argc, char** argv) {
         statsPanel.recordIMUSample(imuSize);
 
         if (imuCount % 100 == 0) {  // Print every 100 samples
-            std::cout << "Received IMU: acc=(" << imu.accX << ", " << imu.accY
-                      << ", " << imu.accZ << ") gyro=(" << imu.gyroX << ", "
-                      << imu.gyroY << ", " << imu.gyroZ << ")" << std::endl;
+            std::cout << "Received IMU: acc=(" << imu.accX() << ", " << imu.accY()
+                      << ", " << imu.accZ() << ") gyro=(" << imu.gyroX() << ", "
+                      << imu.gyroY() << ", " << imu.gyroZ() << ")" << std::endl;
         }
     });
 
@@ -311,9 +311,9 @@ int main(int argc, char** argv) {
     receiver.setIMUCallback([](const vi_slam::IMUSample& imu) {
         static int imuCount = 0;
         if (++imuCount % 100 == 0) {
-            std::cout << "Received IMU: acc=(" << imu.accX << ", " << imu.accY
-                      << ", " << imu.accZ << ") gyro=(" << imu.gyroX << ", "
-                      << imu.gyroY << ", " << imu.gyroZ << ")" << std::endl;
+            std::cout << "Received IMU: acc=(" << imu.accX() << ", " << imu.accY()
+                      << ", " << imu.accZ() << ") gyro=(" << imu.gyroX() << ", "
+                      << imu.gyroY() << ", " << imu.gyroZ() << ")" << std::endl;
         }
     });
 

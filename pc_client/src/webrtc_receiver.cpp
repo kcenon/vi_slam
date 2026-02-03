@@ -137,12 +137,12 @@ private:
             if (localFrameCount % 3 == 0) {  // Every 3rd frame
                 IMUSample imu;
                 imu.timestampNs = timestamp;
-                imu.accX = 0.0;
-                imu.accY = 0.0;
-                imu.accZ = 9.81;
-                imu.gyroX = 0.0;
-                imu.gyroY = 0.0;
-                imu.gyroZ = 0.0;
+                imu.setAccX(0.0);
+                imu.setAccY(0.0);
+                imu.setAccZ(9.81);
+                imu.setGyroX(0.0);
+                imu.setGyroY(0.0);
+                imu.setGyroZ(0.0);
 
                 std::lock_guard<std::mutex> lock(mutex_);
                 if (imuCallback_) {

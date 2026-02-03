@@ -4,6 +4,7 @@
 #include <sstream>
 #include <cmath>
 #include <cassert>
+#include <Eigen/Core>
 
 using namespace vi_slam;
 using namespace vi_slam::output;
@@ -16,32 +17,20 @@ void testExportPLYAscii() {
 
     // Point 1: Origin with red color
     points[0].id = 1;
-    points[0].position[0] = 0.0;
-    points[0].position[1] = 0.0;
-    points[0].position[2] = 0.0;
-    points[0].color[0] = 255;
-    points[0].color[1] = 0;
-    points[0].color[2] = 0;
+    points[0].position = Eigen::Vector3d::Zero();
+    points[0].color = Eigen::Matrix<uint8_t, 3, 1>(255, 0, 0);
     points[0].observations = 10;
 
     // Point 2: Translation along X with green color
     points[1].id = 2;
-    points[1].position[0] = 1.0;
-    points[1].position[1] = 0.0;
-    points[1].position[2] = 0.0;
-    points[1].color[0] = 0;
-    points[1].color[1] = 255;
-    points[1].color[2] = 0;
+    points[1].position = Eigen::Vector3d(1.0, 0.0, 0.0);
+    points[1].color = Eigen::Matrix<uint8_t, 3, 1>(0, 255, 0);
     points[1].observations = 5;
 
     // Point 3: 3D position with blue color
     points[2].id = 3;
-    points[2].position[0] = 1.0;
-    points[2].position[1] = 1.0;
-    points[2].position[2] = 1.0;
-    points[2].color[0] = 0;
-    points[2].color[1] = 0;
-    points[2].color[2] = 255;
+    points[2].position = Eigen::Vector3d(1.0, 1.0, 1.0);
+    points[2].color = Eigen::Matrix<uint8_t, 3, 1>(0, 0, 255);
     points[2].observations = 20;
 
     const std::string filepath = "/tmp/test_pointcloud_ascii.ply";
@@ -137,21 +126,13 @@ void testExportPLYBinary() {
 
     // Point 1: Origin
     points[0].id = 1;
-    points[0].position[0] = 0.0;
-    points[0].position[1] = 0.0;
-    points[0].position[2] = 0.0;
-    points[0].color[0] = 128;
-    points[0].color[1] = 128;
-    points[0].color[2] = 128;
+    points[0].position = Eigen::Vector3d::Zero();
+    points[0].color = Eigen::Matrix<uint8_t, 3, 1>::Constant(128);
 
     // Point 2: Translation
     points[1].id = 2;
-    points[1].position[0] = 2.5;
-    points[1].position[1] = 3.7;
-    points[1].position[2] = -1.2;
-    points[1].color[0] = 200;
-    points[1].color[1] = 150;
-    points[1].color[2] = 100;
+    points[1].position = Eigen::Vector3d(2.5, 3.7, -1.2);
+    points[1].color = Eigen::Matrix<uint8_t, 3, 1>(200, 150, 100);
 
     const std::string filepath = "/tmp/test_pointcloud_binary.ply";
     assert(PointCloudExporter::exportPLYBinary(filepath, points));
@@ -222,7 +203,7 @@ void testInvalidFilepath() {
     std::cout << "Testing invalid filepath..." << std::endl;
 
     std::vector<MapPoint> points(1);
-    points[0].position[0] = 0.0;
+    points[0].position = Eigen::Vector3d::Zero();
 
     assert(!PointCloudExporter::exportPLY("/invalid/path/test.ply", points));
     assert(!PointCloudExporter::exportPLYBinary("/invalid/path/test.ply", points));
@@ -266,12 +247,16 @@ void testLargePointCloud() {
 
     for (size_t i = 0; i < numPoints; ++i) {
         points[i].id = static_cast<int64_t>(i);
-        points[i].position[0] = static_cast<double>(i) * 0.1;
-        points[i].position[1] = static_cast<double>(i) * 0.2;
-        points[i].position[2] = static_cast<double>(i) * 0.3;
-        points[i].color[0] = static_cast<uint8_t>(i % 256);
-        points[i].color[1] = static_cast<uint8_t>((i * 2) % 256);
-        points[i].color[2] = static_cast<uint8_t>((i * 3) % 256);
+        points[i].position = Eigen::Vector3d(
+            static_cast<double>(i) * 0.1,
+            static_cast<double>(i) * 0.2,
+            static_cast<double>(i) * 0.3
+        );
+        points[i].color = Eigen::Matrix<uint8_t, 3, 1>(
+            static_cast<uint8_t>(i % 256),
+            static_cast<uint8_t>((i * 2) % 256),
+            static_cast<uint8_t>((i * 3) % 256)
+        );
     }
 
     // Test ASCII format

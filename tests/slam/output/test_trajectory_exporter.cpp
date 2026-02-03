@@ -4,6 +4,8 @@
 #include <sstream>
 #include <cmath>
 #include <cassert>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
 using namespace vi_slam;
 using namespace vi_slam::output;
@@ -16,35 +18,20 @@ void testExportTUM() {
 
     // Pose 1: Identity at origin
     poses[0].timestampNs = 1000000000;  // 1.0 seconds
-    poses[0].position[0] = 0.0;
-    poses[0].position[1] = 0.0;
-    poses[0].position[2] = 0.0;
-    poses[0].orientation[0] = 1.0;  // qw
-    poses[0].orientation[1] = 0.0;  // qx
-    poses[0].orientation[2] = 0.0;  // qy
-    poses[0].orientation[3] = 0.0;  // qz
+    poses[0].position = Eigen::Vector3d::Zero();
+    poses[0].orientation = Eigen::Quaterniond::Identity();
     poses[0].valid = true;
 
     // Pose 2: Translation along X
     poses[1].timestampNs = 2000000000;  // 2.0 seconds
-    poses[1].position[0] = 1.0;
-    poses[1].position[1] = 0.0;
-    poses[1].position[2] = 0.0;
-    poses[1].orientation[0] = 1.0;  // qw
-    poses[1].orientation[1] = 0.0;  // qx
-    poses[1].orientation[2] = 0.0;  // qy
-    poses[1].orientation[3] = 0.0;  // qz
+    poses[1].position = Eigen::Vector3d(1.0, 0.0, 0.0);
+    poses[1].orientation = Eigen::Quaterniond::Identity();
     poses[1].valid = true;
 
     // Pose 3: 90 degree rotation around Z
     poses[2].timestampNs = 3000000000;  // 3.0 seconds
-    poses[2].position[0] = 1.0;
-    poses[2].position[1] = 1.0;
-    poses[2].position[2] = 0.0;
-    poses[2].orientation[0] = std::cos(M_PI / 4.0);  // qw
-    poses[2].orientation[1] = 0.0;                    // qx
-    poses[2].orientation[2] = 0.0;                    // qy
-    poses[2].orientation[3] = std::sin(M_PI / 4.0);  // qz
+    poses[2].position = Eigen::Vector3d(1.0, 1.0, 0.0);
+    poses[2].orientation = Eigen::Quaterniond(Eigen::AngleAxisd(M_PI / 2.0, Eigen::Vector3d::UnitZ()));
     poses[2].valid = true;
 
     const std::string filepath = "/tmp/test_tum.txt";
@@ -87,24 +74,14 @@ void testExportKITTI() {
 
     // Pose 1: Identity at origin
     poses[0].timestampNs = 1000000000;
-    poses[0].position[0] = 0.0;
-    poses[0].position[1] = 0.0;
-    poses[0].position[2] = 0.0;
-    poses[0].orientation[0] = 1.0;
-    poses[0].orientation[1] = 0.0;
-    poses[0].orientation[2] = 0.0;
-    poses[0].orientation[3] = 0.0;
+    poses[0].position = Eigen::Vector3d::Zero();
+    poses[0].orientation = Eigen::Quaterniond::Identity();
     poses[0].valid = true;
 
     // Pose 2: Translation
     poses[1].timestampNs = 2000000000;
-    poses[1].position[0] = 1.0;
-    poses[1].position[1] = 2.0;
-    poses[1].position[2] = 3.0;
-    poses[1].orientation[0] = 1.0;
-    poses[1].orientation[1] = 0.0;
-    poses[1].orientation[2] = 0.0;
-    poses[1].orientation[3] = 0.0;
+    poses[1].position = Eigen::Vector3d(1.0, 2.0, 3.0);
+    poses[1].orientation = Eigen::Quaterniond::Identity();
     poses[1].valid = true;
 
     const std::string filepath = "/tmp/test_kitti.txt";
@@ -183,12 +160,12 @@ void testSkipInvalidPoses() {
 
     // Valid pose
     poses[0].timestampNs = 1000000000;
-    poses[0].position[0] = 1.0;
+    poses[0].position = Eigen::Vector3d(1.0, 0.0, 0.0);
     poses[0].valid = true;
 
     // Invalid pose
     poses[1].timestampNs = 2000000000;
-    poses[1].position[0] = 2.0;
+    poses[1].position = Eigen::Vector3d(2.0, 0.0, 0.0);
     poses[1].valid = false;
 
     const std::string filepath = "/tmp/test_skip.txt";

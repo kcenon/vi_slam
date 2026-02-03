@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <opencv2/core.hpp>
+#include <Eigen/Core>
 
 using namespace vi_slam;
 
@@ -67,12 +68,8 @@ int main() {
     // Test 4: Process IMU sample
     IMUSample imu;
     imu.timestampNs = 1000000000LL;  // 1 second
-    imu.accX = 0.0;
-    imu.accY = 0.0;
-    imu.accZ = 9.81;  // Gravity
-    imu.gyroX = 0.0;
-    imu.gyroY = 0.0;
-    imu.gyroZ = 0.0;
+    imu.acceleration = Eigen::Vector3d(0.0, 0.0, 9.81);  // Gravity
+    imu.angularVelocity = Eigen::Vector3d::Zero();
 
     adapter.processIMU(imu);
     std::cout << "PASS: IMU sample processed" << std::endl;

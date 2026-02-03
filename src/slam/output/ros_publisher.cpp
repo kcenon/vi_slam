@@ -72,15 +72,15 @@ geometry_msgs::PoseStamped ROSPublisher::toPoseStamped(const Pose6DoF& pose) con
     msg.header.frame_id = config_.frameId;
 
     // Position
-    msg.pose.position.x = pose.position[0];
-    msg.pose.position.y = pose.position[1];
-    msg.pose.position.z = pose.position[2];
+    msg.pose.position.x = pose.position.x();
+    msg.pose.position.y = pose.position.y();
+    msg.pose.position.z = pose.position.z();
 
-    // Orientation (qw, qx, qy, qz -> x, y, z, w)
-    msg.pose.orientation.x = pose.orientation[1];
-    msg.pose.orientation.y = pose.orientation[2];
-    msg.pose.orientation.z = pose.orientation[3];
-    msg.pose.orientation.w = pose.orientation[0];
+    // Orientation
+    msg.pose.orientation.x = pose.orientation.x();
+    msg.pose.orientation.y = pose.orientation.y();
+    msg.pose.orientation.z = pose.orientation.z();
+    msg.pose.orientation.w = pose.orientation.w();
 
     return msg;
 }
@@ -94,18 +94,16 @@ nav_msgs::Odometry ROSPublisher::toOdometry(const Pose6DoF& pose) const {
     msg.child_frame_id = config_.childFrameId;
 
     // Pose
-    msg.pose.pose.position.x = pose.position[0];
-    msg.pose.pose.position.y = pose.position[1];
-    msg.pose.pose.position.z = pose.position[2];
-    msg.pose.pose.orientation.x = pose.orientation[1];
-    msg.pose.pose.orientation.y = pose.orientation[2];
-    msg.pose.pose.orientation.z = pose.orientation[3];
-    msg.pose.pose.orientation.w = pose.orientation[0];
+    msg.pose.pose.position.x = pose.position.x();
+    msg.pose.pose.position.y = pose.position.y();
+    msg.pose.pose.position.z = pose.position.z();
+    msg.pose.pose.orientation.x = pose.orientation.x();
+    msg.pose.pose.orientation.y = pose.orientation.y();
+    msg.pose.pose.orientation.z = pose.orientation.z();
+    msg.pose.pose.orientation.w = pose.orientation.w();
 
     // Pose covariance (6x6 matrix)
-    for (int i = 0; i < 36; ++i) {
-        msg.pose.covariance[i] = pose.covariance[i];
-    }
+    Eigen::Map<Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(msg.pose.covariance.data()) = pose.covariance;
 
     // Twist (velocity) computation
     if (hasPreviousPose_) {
@@ -113,9 +111,10 @@ nav_msgs::Odometry ROSPublisher::toOdometry(const Pose6DoF& pose) const {
 
         if (dt > 0) {
             // Linear velocity
-            msg.twist.twist.linear.x = (pose.position[0] - previousPose_.position[0]) / dt;
-            msg.twist.twist.linear.y = (pose.position[1] - previousPose_.position[1]) / dt;
-            msg.twist.twist.linear.z = (pose.position[2] - previousPose_.position[2]) / dt;
+            Eigen::Vector3d velocity = (pose.position - previousPose_.position) / dt;
+            msg.twist.twist.linear.x = velocity.x();
+            msg.twist.twist.linear.y = velocity.y();
+            msg.twist.twist.linear.z = velocity.z();
 
             // Angular velocity computation would require quaternion differentiation
             // For simplicity, set to zero (can be enhanced later)
