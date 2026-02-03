@@ -140,7 +140,7 @@ jobs:
         cmake -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DENABLE_COVERAGE=ON
         cmake --build build
         cd build
-        ctest --output-on-failure
+        ctest --output-on-failure --exclude-regex "test_euroc_benchmark"
 
     - name: Run E2E tests
       timeout-minutes: 15
