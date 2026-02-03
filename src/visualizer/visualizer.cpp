@@ -1,7 +1,7 @@
 #include "visualizer/visualizer.hpp"
+#include "common/logging.hpp"
 #include <GLFW/glfw3.h>
 #include <stdexcept>
-#include <iostream>
 
 namespace vi_slam {
 namespace visualizer {
@@ -9,7 +9,7 @@ namespace visualizer {
 namespace {
 // GLFW error callback
 void glfwErrorCallback(int error, const char* description) {
-    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
+    LOG_ERROR("Visualizer", "GLFW Error {}: {}", error, description);
 }
 }  // namespace
 
@@ -31,7 +31,7 @@ bool Visualizer::initialize(const VisualizerConfig& config) {
     std::lock_guard<std::mutex> lock(dataMutex_);
 
     if (initialized_) {
-        std::cerr << "Visualizer already initialized" << std::endl;
+        LOG_WARN("Visualizer", "Visualizer already initialized");
         return false;
     }
 
@@ -154,7 +154,7 @@ bool Visualizer::initializeGLFW() {
     glfwSetErrorCallback(glfwErrorCallback);
 
     if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
+        LOG_ERROR("Visualizer", "Failed to initialize GLFW");
         return false;
     }
 
@@ -178,7 +178,7 @@ bool Visualizer::initializeGLFW() {
     );
 
     if (!window_) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
+        LOG_ERROR("Visualizer", "Failed to create GLFW window");
         glfwTerminate();
         return false;
     }
