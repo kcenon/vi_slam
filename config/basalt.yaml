@@ -1,0 +1,188 @@
+# Basalt VIO Configuration File
+# This configuration file follows Basalt VIO format conventions
+# Reference: https://gitlab.com/VladyslavUsenko/basalt
+
+# =============================================================================
+# General Settings
+# =============================================================================
+
+# VIO mode: "mono", "stereo"
+vio_mode: "mono"
+
+# Enable debug output
+debug_mode: false
+
+# Output trajectory file
+trajectory_file: "trajectory_basalt.txt"
+
+# =============================================================================
+# Camera Intrinsics (Example - EuRoC MAV dataset)
+# =============================================================================
+
+# Camera model: "pinhole", "unified", "eucm", "ds"
+cam0:
+  model: "pinhole"
+  intrinsics:
+    fx: 458.654
+    fy: 457.296
+    cx: 367.215
+    cy: 248.375
+  distortion:
+    model: "radtan"
+    coeffs: [-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05]
+  resolution:
+    width: 752
+    height: 480
+
+# =============================================================================
+# Camera-IMU Extrinsics (T_i_c: Camera to IMU transformation)
+# =============================================================================
+
+# Transformation from camera frame to IMU frame
+T_i_c0:
+  # Rotation as quaternion [w, x, y, z]
+  rotation:
+    w: 0.0148655429818
+    x: -0.999880929698
+    y: 0.00414029679422
+    z: -0.00485987917536
+  # Translation [x, y, z] in meters
+  translation:
+    x: 0.0652229934167
+    y: -0.0207055214469
+    z: -0.00808170117104
+
+# Time offset between camera and IMU (td = t_imu - t_cam)
+td_cam0: 0.0
+
+# =============================================================================
+# IMU Parameters
+# =============================================================================
+
+imu:
+  # IMU rate (Hz)
+  rate: 200
+
+  # Accelerometer noise density (m/s^2/sqrt(Hz))
+  acc_noise: 0.08
+
+  # Gyroscope noise density (rad/s/sqrt(Hz))
+  gyro_noise: 0.004
+
+  # Accelerometer bias random walk (m/s^3/sqrt(Hz))
+  acc_bias_random_walk: 4.0e-05
+
+  # Gyroscope bias random walk (rad/s^2/sqrt(Hz))
+  gyro_bias_random_walk: 2.0e-06
+
+  # Gravity magnitude (m/s^2)
+  gravity: 9.81007
+
+# =============================================================================
+# Optical Flow Parameters
+# =============================================================================
+
+optical_flow:
+  # Maximum number of flow points to track
+  max_points: 200
+
+  # Minimum quality threshold for flow points
+  quality_threshold: 0.7
+
+  # Number of pyramid levels
+  pyramid_levels: 3
+
+  # Patch size for KLT tracking
+  patch_size: 21
+
+  # Maximum optical flow displacement (pixels)
+  max_flow: 50
+
+  # Enable subpixel refinement
+  subpixel: true
+
+  # FAST corner detection threshold
+  fast_threshold: 20
+
+  # Minimum distance between features (pixels)
+  min_distance: 10
+
+# =============================================================================
+# VIO State Estimation Parameters
+# =============================================================================
+
+vio:
+  # Maximum number of frames in optimization window
+  max_frames: 5
+
+  # Maximum number of keyframes
+  max_keyframes: 7
+
+  # Minimum parallax for new keyframe (pixels)
+  min_parallax: 10.0
+
+  # Use IMU pre-integration
+  use_imu_preintegration: true
+
+  # Enable loop closure
+  loop_closure: false
+
+  # Marginalization type: "oldest", "newest", "closest"
+  marginalization: "oldest"
+
+# =============================================================================
+# Initialization Parameters
+# =============================================================================
+
+initialization:
+  # IMU initialization window (seconds)
+  imu_window: 1.0
+
+  # Minimum feature count for initialization
+  min_features: 20
+
+  # Use static initialization
+  static_init: true
+
+  # Maximum gyroscope norm for static init (rad/s)
+  max_gyro_norm: 0.1
+
+  # Maximum accelerometer deviation for static init (m/s^2)
+  max_acc_deviation: 0.1
+
+# =============================================================================
+# Solver Parameters
+# =============================================================================
+
+solver:
+  # Maximum iterations for non-linear optimization
+  max_iterations: 10
+
+  # Convergence threshold
+  convergence_threshold: 1.0e-06
+
+  # Levenberg-Marquardt damping factor
+  lm_damping: 1.0e-04
+
+  # Use Huber robust cost function
+  use_huber: true
+
+  # Huber threshold
+  huber_threshold: 1.0
+
+# =============================================================================
+# Output Settings
+# =============================================================================
+
+output:
+  # Save trajectory
+  save_trajectory: true
+
+  # Trajectory format: "tum", "kitti", "euroc"
+  trajectory_format: "tum"
+
+  # Save map points
+  save_map: false
+
+  # Verbose level (0 = quiet, 1 = normal, 2 = debug)
+  verbose: 1
