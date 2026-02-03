@@ -354,13 +354,18 @@ The API documentation is automatically generated from source code comments using
 - [Software Requirements Specification (SRS)](docs/SRS.md)
 - [Software Design Specification (SDS)](docs/SDS.md)
 - [Reference Documentation](docs/reference/)
+- [Changelog](CHANGELOG.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
 
 ## Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+Quick start:
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feat/your-feature`)
+3. Commit your changes following [Conventional Commits](https://www.conventionalcommits.org/)
+4. Push to the branch (`git push origin feat/your-feature`)
 5. Open a Pull Request
 
 ## License
