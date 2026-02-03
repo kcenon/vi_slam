@@ -1,6 +1,11 @@
 #ifndef VI_SLAM_VINS_MONO_ADAPTER_HPP
 #define VI_SLAM_VINS_MONO_ADAPTER_HPP
 
+/**
+ * @file vins_mono_adapter.hpp
+ * @brief VINS-Mono framework adapter for VI-SLAM
+ */
+
 #include "slam/i_slam_framework.hpp"
 #include <memory>
 #include <mutex>
@@ -9,10 +14,23 @@
 namespace vi_slam {
 
 // Forward declaration of VINS-Mono Estimator
-// This would be the actual VINS-Mono estimator class
 class VINSMonoEstimator;
 
-// Adapter for VINS-Mono framework
+/**
+ * @brief VINS-Mono framework adapter for VI-SLAM
+ *
+ * Provides an adapter interface for the VINS-Mono visual-inertial
+ * odometry system. VINS-Mono uses feature-based tracking with
+ * tightly-coupled IMU integration.
+ *
+ * Key features:
+ * - Monocular visual-inertial odometry
+ * - Sliding window optimization
+ * - Loop closure detection
+ * - Real-time performance on mobile platforms
+ *
+ * @see https://github.com/HKUST-Aerial-Robotics/VINS-Mono
+ */
 class VINSMonoAdapter : public ISLAMFramework {
 public:
     VINSMonoAdapter();

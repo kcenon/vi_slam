@@ -1,0 +1,100 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'README.md'
+      - 'Doxyfile'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'include/**'
+      - 'src/**'
+      - 'README.md'
+      - 'Doxyfile'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Doxygen
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y doxygen graphviz
+
+    - name: Verify Doxygen installation
+      run: |
+        doxygen --version
+        echo "Doxygen installed successfully"
+
+    - name: Generate documentation
+      run: |
+        doxygen Doxyfile
+        echo "Documentation generated successfully"
+
+    - name: Check for warnings
+      run: |
+        if [ -f docs/api/doxygen_warnings.log ]; then
+          if [ -s docs/api/doxygen_warnings.log ]; then
+            echo "Doxygen warnings found:"
+            cat docs/api/doxygen_warnings.log
+            echo ""
+            echo "Note: Warnings do not fail the build, but should be addressed."
+          fi
+        fi
+
+    - name: Upload documentation artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-documentation
+        path: docs/api/html
+        retention-days: 30
+
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Download documentation artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: api-documentation
+        path: docs/api/html
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/api/html
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

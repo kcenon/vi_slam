@@ -338,6 +338,15 @@ tar -xzf ORBvoc.txt.tar.gz -C vocab/
 
 ## Documentation
 
+### API Reference
+
+The API documentation is automatically generated from source code comments using Doxygen.
+
+- **Online**: [API Documentation](https://kcenon.github.io/vi_slam/) (GitHub Pages)
+- **Local**: Generate locally with `doxygen Doxyfile`, then open `docs/api/html/index.html`
+
+### Project Documents
+
 - [Product Requirements Document (PRD)](docs/PRD.md)
 - [Software Requirements Specification (SRS)](docs/SRS.md)
 - [Software Design Specification (SDS)](docs/SDS.md)

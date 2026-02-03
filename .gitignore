@@ -49,3 +49,6 @@ docker-compose.override.yml
 /output/
 *.tum
 *.kitti
+
+# Generated documentation
+docs/api/
