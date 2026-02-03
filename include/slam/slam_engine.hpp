@@ -1,6 +1,15 @@
 #ifndef VI_SLAM_SLAM_ENGINE_HPP
 #define VI_SLAM_SLAM_ENGINE_HPP
 
+/**
+ * @file slam_engine.hpp
+ * @brief Main SLAM engine facade for VI-SLAM system
+ *
+ * This header defines the SLAMEngine class, which provides a unified
+ * interface for different SLAM framework backends (VINS-Mono, OpenVINS,
+ * ORB-SLAM3, Basalt).
+ */
+
 #include "slam/i_slam_framework.hpp"
 #include <functional>
 #include <memory>
@@ -18,52 +27,169 @@
 
 namespace vi_slam {
 
-// Forward declarations
+/**
+ * @brief Supported SLAM framework types
+ *
+ * Enumeration of available visual-inertial SLAM backends.
+ */
 enum class SLAMFrameworkType {
-    VINS_MONO,
-    OPENVINS,
-    ORB_SLAM3,
-    BASALT
+    VINS_MONO,   ///< VINS-Mono: Monocular visual-inertial SLAM
+    OPENVINS,    ///< OpenVINS: MSCKF-based VIO system
+    ORB_SLAM3,   ///< ORB-SLAM3: Feature-based visual SLAM
+    BASALT       ///< Basalt: Optical flow based VIO
 };
 
-// Callback type for pose output
+/// Callback type for pose updates
 using PoseCallback = std::function<void(const Pose6DoF&)>;
+
+/// Callback type for tracking status changes
 using StatusCallback = std::function<void(TrackingStatus)>;
 
-// SLAMEngine facade class managing SLAM framework lifecycle
+/**
+ * @brief Main SLAM engine facade managing framework lifecycle
+ *
+ * SLAMEngine provides a unified interface for visual-inertial SLAM
+ * processing. It supports multiple backend frameworks and provides
+ * optional output to ROS topics and ZMQ sockets.
+ *
+ * @code{.cpp}
+ * vi_slam::SLAMEngine engine;
+ * engine.selectFramework(vi_slam::SLAMFrameworkType::OPENVINS);
+ * engine.initialize("config/openvins.yaml");
+ *
+ * // Process sensor data
+ * engine.processIMU(imuSample);
+ * engine.processImage(frame, timestampNs);
+ *
+ * // Get current pose
+ * vi_slam::Pose6DoF pose;
+ * if (engine.getPose(pose)) {
+ *     // Use pose...
+ * }
+ * @endcode
+ */
 class SLAMEngine {
 public:
+    /**
+     * @brief Default constructor
+     */
     SLAMEngine();
+
+    /**
+     * @brief Destructor - shuts down the engine and releases resources
+     */
     ~SLAMEngine();
 
-    // Prevent copying
+    /// @name Non-copyable
+    /// @{
     SLAMEngine(const SLAMEngine&) = delete;
     SLAMEngine& operator=(const SLAMEngine&) = delete;
+    /// @}
 
-    // Framework selection and switching
+    /// @name Framework Selection
+    /// @{
+
+    /**
+     * @brief Select and instantiate a SLAM framework backend
+     * @param type The framework type to use
+     * @return true if framework was created successfully
+     */
     bool selectFramework(SLAMFrameworkType type);
+
+    /**
+     * @brief Get the currently selected framework type
+     * @return Current framework type
+     */
     SLAMFrameworkType getCurrentFramework() const;
+    /// @}
 
-    // Initialization
+    /// @name Initialization
+    /// @{
+
+    /**
+     * @brief Initialize the SLAM engine with configuration
+     * @param configPath Path to the framework configuration file
+     * @return true if initialization succeeded
+     */
     bool initialize(const std::string& configPath);
+
+    /**
+     * @brief Load camera and IMU calibration parameters
+     * @param calibPath Path to the calibration file
+     * @return true if calibration loaded successfully
+     */
     bool loadCalibration(const std::string& calibPath);
+    /// @}
 
-    // Data processing (delegates to current framework)
+    /// @name Data Processing
+    /// @{
+
+    /**
+     * @brief Process a camera image frame
+     * @param image Input image (OpenCV Mat)
+     * @param timestampNs Timestamp in nanoseconds
+     */
     void processImage(const cv::Mat& image, int64_t timestampNs);
+
+    /**
+     * @brief Process an IMU measurement
+     * @param imu IMU sample with accelerometer and gyroscope data
+     */
     void processIMU(const IMUSample& imu);
+    /// @}
 
-    // Output
+    /// @name Output
+    /// @{
+
+    /**
+     * @brief Get the latest estimated pose
+     * @param pose Output pose structure
+     * @return true if a valid pose is available
+     */
     bool getPose(Pose6DoF& pose) const;
+
+    /**
+     * @brief Get current tracking status
+     * @return Current tracking status
+     */
     TrackingStatus getStatus() const;
+
+    /**
+     * @brief Get all map points from the current map
+     * @return Vector of 3D map points
+     */
     std::vector<MapPoint> getMapPoints() const;
+    /// @}
 
-    // Control
+    /// @name Control
+    /// @{
+
+    /**
+     * @brief Reset the SLAM system to initial state
+     */
     void reset();
-    void shutdown();
 
-    // Callbacks
+    /**
+     * @brief Shutdown the SLAM engine and release resources
+     */
+    void shutdown();
+    /// @}
+
+    /// @name Callbacks
+    /// @{
+
+    /**
+     * @brief Set callback for pose updates
+     * @param callback Function to call when new pose is available
+     */
     void setPoseCallback(PoseCallback callback);
+
+    /**
+     * @brief Set callback for status changes
+     * @param callback Function to call when tracking status changes
+     */
     void setStatusCallback(StatusCallback callback);
+    /// @}
 
 #ifdef ENABLE_ROS
     // ROS integration

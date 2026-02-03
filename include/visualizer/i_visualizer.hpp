@@ -1,6 +1,11 @@
 #ifndef VI_SLAM_I_VISUALIZER_HPP
 #define VI_SLAM_I_VISUALIZER_HPP
 
+/**
+ * @file i_visualizer.hpp
+ * @brief Abstract interface for SLAM visualization backends
+ */
+
 #include "common/types.hpp"
 #include <memory>
 #include <string>
@@ -9,16 +14,23 @@
 namespace vi_slam {
 namespace visualizer {
 
-// Visualizer configuration
+/**
+ * @brief Configuration parameters for visualizer
+ */
 struct VisualizerConfig {
-    int windowWidth = 1280;
-    int windowHeight = 720;
-    std::string windowTitle = "VI-SLAM Visualizer";
-    int targetFPS = 60;
-    bool enableVSync = true;
+    int windowWidth = 1280;          ///< Window width in pixels
+    int windowHeight = 720;          ///< Window height in pixels
+    std::string windowTitle = "VI-SLAM Visualizer"; ///< Window title
+    int targetFPS = 60;              ///< Target frame rate
+    bool enableVSync = true;         ///< Enable vertical sync
 };
 
-// Interface for visualizer implementations
+/**
+ * @brief Abstract interface for visualization implementations
+ *
+ * IVisualizer defines the contract for rendering SLAM output including
+ * camera trajectory, 3D map points, and tracking status overlays.
+ */
 class IVisualizer {
 public:
     virtual ~IVisualizer() = default;

@@ -1,6 +1,11 @@
 #ifndef VI_SLAM_VISUALIZER_HPP
 #define VI_SLAM_VISUALIZER_HPP
 
+/**
+ * @file visualizer.hpp
+ * @brief OpenGL-based SLAM visualizer implementation
+ */
+
 #include "visualizer/i_visualizer.hpp"
 #include <chrono>
 #include <memory>
@@ -12,7 +17,13 @@ struct GLFWwindow;
 namespace vi_slam {
 namespace visualizer {
 
-// OpenGL-based visualizer implementation using GLFW
+/**
+ * @brief OpenGL-based visualizer implementation using GLFW
+ *
+ * Provides real-time 3D visualization of SLAM output including
+ * camera trajectory, map points, and performance metrics.
+ * Uses GLFW for window management and OpenGL for rendering.
+ */
 class Visualizer : public IVisualizer {
 public:
     Visualizer();
