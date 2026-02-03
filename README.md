@@ -1,5 +1,8 @@
 # VI-SLAM: Visual-Inertial SLAM System
 
+[![CI](https://github.com/kcenon/vi_slam/actions/workflows/ci.yml/badge.svg)](https://github.com/kcenon/vi_slam/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/kcenon/vi_slam/branch/main/graph/badge.svg)](https://codecov.io/gh/kcenon/vi_slam)
+
 A Visual-Inertial Simultaneous Localization and Mapping (VI-SLAM) system with Android sensor data collection and PC-based SLAM processing.
 
 ## System Architecture
