@@ -1,3 +1,5 @@
+> Status: archived 2026-09. No further maintenance; kept for reference.
+
 # VI-SLAM: Visual-Inertial SLAM System
 
 [![CI](https://github.com/kcenon/vi_slam/actions/workflows/ci.yml/badge.svg)](https://github.com/kcenon/vi_slam/actions/workflows/ci.yml)
